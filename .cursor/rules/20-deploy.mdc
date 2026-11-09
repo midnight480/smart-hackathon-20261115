@@ -1,0 +1,8 @@
+---
+description: Cloudflare / Netlify / Vercel / AWS へのデプロイや設定ファイル（wrangler, netlify.toml, vercel.ts, CDK など）を扱うときに読む
+globs: ["wrangler.*", "netlify.toml", "vercel.json", "vercel.ts", "amplify.yml", "cdk.json", "template.yaml", "**/infra/**"]
+alwaysApply: false
+---
+
+デプロイ先ごとのナレッジは `docs/<platform>/README.md` にあります。作業前に該当ファイルを読んでください。
+記載と公式ドキュメントが食い違ったら公式を優先し、`docs/` を更新してください。

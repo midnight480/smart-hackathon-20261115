@@ -1,0 +1,10 @@
+---
+description: UI 実装時は design/DESIGN.md のトークンと design/components/ の部品仕様に従う
+globs: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.astro", "**/*.html", "**/*.css"]
+alwaysApply: false
+---
+
+UI を書くときは `design/DESIGN.md` のトークンを使い、値を直書きしないでください。
+部品は `design/components/<部品名>.md` の仕様（状態・アクセシビリティ）に合わせてください。
+
+@design/DESIGN.md

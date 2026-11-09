@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UI 部品ギャラリー</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../components.css">
+  <style>
+    .page { max-width: 1120px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+    header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+    h1 { font-size: var(--font-size-2xl); line-height: var(--line-height-heading); margin: 0; }
+    section { margin-top: var(--space-7); }
+    section > h2 { font-size: var(--font-size-xl); margin: 0 0 var(--space-1); }
+    section > p.src { margin: 0 0 var(--space-4); font-size: var(--font-size-sm); color: var(--color-on-surface-muted); }
+    .demo { padding: var(--space-5); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-muted); }
+    .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+    .swatch { display: grid; gap: var(--space-1); font-size: var(--font-size-xs); }
+    .swatch span { display: block; height: 48px; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+    .form { max-width: 420px; }
+    code { font-family: var(--font-family-mono); font-size: 0.9em; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>UI 部品ギャラリー</h1>
+      <p class="field-hint">design/DESIGN.md のトークンと design/components/ の仕様をそのまま描画しています</p>
+    </div>
+    <button type="button" class="btn btn-secondary" id="theme">ダーク / ライト切替</button>
+  </header>
+
+  <section>
+    <h2>色</h2>
+    <p class="src">DESIGN.md › colors</p>
+    <div class="grid" id="swatches"></div>
+  </section>
+
+  <section>
+    <h2>ボタン</h2>
+    <p class="src">components/button.md</p>
+    <div class="demo row">
+      <button type="button" class="btn btn-primary">保存する</button>
+      <button type="button" class="btn btn-secondary">キャンセル</button>
+      <button type="button" class="btn btn-ghost">詳細</button>
+      <button type="button" class="btn btn-danger">削除する</button>
+      <button type="button" class="btn btn-primary btn-sm">小</button>
+      <button type="button" class="btn btn-primary" disabled>無効</button>
+      <button type="button" class="btn btn-ghost" aria-label="閉じる">✕</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>フォーム</h2>
+    <p class="src">components/text-input.md ・ select.md ・ checkbox.md ・ radio.md ・ toggle.md</p>
+    <div class="demo">
+      <form class="form" onsubmit="event.preventDefault()">
+        <div class="field">
+          <label for="email" class="field-label">メールアドレス <span class="required">必須</span></label>
+          <input id="email" type="email" class="input" autocomplete="email" required aria-describedby="email-hint">
+          <p id="email-hint" class="field-hint">確認メールを送ります</p>
+        </div>
+        <div class="field">
+          <label for="team" class="field-label">チーム名</label>
+          <input id="team" class="input" aria-invalid="true" aria-describedby="team-error">
+          <p id="team-error" class="field-error">チーム名を入力してください</p>
+        </div>
+        <div class="field">
+          <label for="disabled-input" class="field-label">受付番号（自動）</label>
+          <input id="disabled-input" class="input" value="A-0012" disabled>
+        </div>
+        <div class="field">
+          <label for="track" class="field-label">参加トラック</label>
+          <select id="track" class="input" required>
+            <option value="" disabled selected>選択してください</option>
+            <option>AI</option><option>IoT</option><option>Web</option>
+          </select>
+        </div>
+        <fieldset class="fieldset">
+          <legend class="field-label">使う技術（複数選択可）</legend>
+          <label class="check"><input type="checkbox" name="tech" checked> 生成 AI</label>
+          <label class="check"><input type="checkbox" name="tech"> IoT</label>
+          <label class="check"><input type="checkbox" name="tech" disabled> 地図（準備中）</label>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="field-label">参加形式</legend>
+          <label class="check"><input type="radio" name="style" checked> 会場参加</label>
+          <label class="check"><input type="radio" name="style"> オンライン参加</label>
+          <label class="check"><input type="radio" name="style"> 両方</label>
+        </fieldset>
+        <div class="row" style="margin-bottom: var(--space-4)">
+          <button type="button" class="switch" role="switch" aria-checked="true" id="notify"><span class="switch-thumb"></span></button>
+          <label for="notify">通知を受け取る</label>
+        </div>
+        <button type="submit" class="btn btn-primary">登録する</button>
+      </form>
+    </div>
+  </section>
+
+  <section>
+    <h2>カード</h2>
+    <p class="src">components/card.md</p>
+    <div class="demo grid">
+      <article class="card">
+        <h3 class="card-title"><a href="#">チームさが</a></h3>
+        <p class="card-body">佐賀の観光データを使ったおすすめルート提案アプリ</p>
+        <p class="card-meta">AI トラック ・ 4 人</p>
+      </article>
+      <article class="card">
+        <h3 class="card-title"><a href="#">ありあけラボ</a></h3>
+        <p class="card-body">有明海の潮位センサーと連動した漁業者向け通知</p>
+        <p class="card-meta">IoT トラック ・ 3 人</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>タブ</h2>
+    <p class="src">components/tabs.md（左右キーで移動できます）</p>
+    <div class="demo">
+      <div role="tablist" aria-label="作品情報" class="tabs">
+        <button role="tab" id="tab-1" aria-selected="true" aria-controls="panel-1" tabindex="0">概要</button>
+        <button role="tab" id="tab-2" aria-selected="false" aria-controls="panel-2" tabindex="-1">技術</button>
+        <button role="tab" id="tab-3" aria-selected="false" aria-controls="panel-3" tabindex="-1">メンバー</button>
+      </div>
+      <div role="tabpanel" id="panel-1" aria-labelledby="tab-1">作品の概要がここに入ります。</div>
+      <div role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden>使った技術: Next.js / Vercel AI SDK</div>
+      <div role="tabpanel" id="panel-3" aria-labelledby="tab-3" hidden>メンバー 4 人</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>モーダル</h2>
+    <p class="src">components/modal.md</p>
+    <div class="demo row">
+      <button type="button" class="btn btn-danger" id="open-modal">削除する</button>
+    </div>
+    <dialog id="confirm" class="modal" aria-labelledby="confirm-title">
+      <form method="dialog">
+        <h2 id="confirm-title" class="modal-title">作品を削除しますか？</h2>
+        <p>この操作は取り消せません。</p>
+        <div class="modal-actions">
+          <button value="cancel" class="btn btn-secondary" autofocus>キャンセル</button>
+          <button value="ok" class="btn btn-danger">削除する</button>
+        </div>
+      </form>
+    </dialog>
+  </section>
+
+  <section>
+    <h2>アラート / トースト</h2>
+    <p class="src">components/alert-toast.md</p>
+    <div class="demo" style="display:grid; gap: var(--space-3)">
+      <div class="alert alert-info" role="status"><strong>お知らせ</strong><p>提出締切は 17:00 です。</p></div>
+      <div class="alert alert-success" role="status"><strong>提出しました</strong><p>審査をお待ちください。</p></div>
+      <div class="alert alert-warning" role="status"><strong>注意</strong><p>デモ URL が未登録です。</p></div>
+      <div class="alert alert-danger" role="alert"><strong>送信できませんでした</strong><p>チーム名を入力してください。</p></div>
+      <div><div class="toast" role="status">保存しました</div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // テーマ切替（OS 設定より優先）
+  document.getElementById("theme").addEventListener("click", () => {
+    const root = document.documentElement;
+    const isDark = root.dataset.theme
+      ? root.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = isDark ? "light" : "dark";
+    renderSwatches();
+  });
+
+  // 色見本（tokens.css の値を読む）
+  const colorTokens = ["primary", "primary-hover", "on-primary", "secondary", "surface", "surface-muted",
+    "on-surface", "on-surface-muted", "border", "success", "warning", "danger", "focus-ring"];
+  function renderSwatches() {
+    const css = getComputedStyle(document.documentElement);
+    document.getElementById("swatches").innerHTML = colorTokens.map((t) => {
+      const v = css.getPropertyValue(`--color-${t}`).trim();
+      return `<div class="swatch"><span style="background:${v}"></span><code>--color-${t}</code><code>${v}</code></div>`;
+    }).join("");
+  }
+  renderSwatches();
+
+  // スイッチ
+  document.querySelectorAll('[role="switch"]').forEach((el) =>
+    el.addEventListener("click", () =>
+      el.setAttribute("aria-checked", String(el.getAttribute("aria-checked") !== "true"))));
+
+  // タブ（WAI-ARIA Tabs パターン）
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  function select(tab) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute("aria-selected", on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    tab.focus();
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener("click", () => select(t));
+    t.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") select(tabs[(i + 1) % tabs.length]);
+      if (e.key === "ArrowLeft") select(tabs[(i - 1 + tabs.length) % tabs.length]);
+    });
+  });
+
+  // モーダル
+  document.getElementById("open-modal").addEventListener("click", () =>
+    document.getElementById("confirm").showModal());
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+---
+description: プロジェクト共通ルール（正本は AGENTS.md）
+alwaysApply: true
+---
+
+このプロジェクトのルールの正本はリポジトリ直下の `AGENTS.md` です。常にこれに従ってください。
+
+@AGENTS.md
