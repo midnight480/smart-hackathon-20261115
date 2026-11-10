@@ -15,6 +15,7 @@
 .
 ├── AGENTS.md            # エージェント共通ルール（正本）
 ├── CLAUDE.md            # Claude Code 用。@AGENTS.md を読み込むだけ
+├── .claude/skills/      # プロジェクト用スキル（unslop: UI の AI っぽさ除去 / yomiyasu: 日本語の推敲）
 ├── .kiro/steering/      # Kiro 用 steering。AGENTS.md を参照
 ├── .cursor/rules/       # Cursor 用 rules。AGENTS.md を参照
 ├── docs/                # デプロイ先ごとのナレッジ

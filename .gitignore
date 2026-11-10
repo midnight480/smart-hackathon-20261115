@@ -24,3 +24,7 @@ out/
 # OS / editor
 .DS_Store
 *.log
+
+# yomiyasu / unslop の作業ファイル
+.yomiyasu/
+.story-frames/
