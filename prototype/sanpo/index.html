@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>えびす時空さんぽ（試作）</title>
+  <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="../../design/tokens.css">
+  <link rel="stylesheet" href="../../design/components.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="top page">
+    <h1 class="title"><a href="#/" class="title-link">えびす時空さんぽ</a><span class="badge">試作</span></h1>
+  </header>
+
+  <!-- 1. 地図：恵比寿さんまで歩く -->
+  <main id="view-map" class="view page" aria-labelledby="map-title">
+    <div class="map-layout">
+      <div class="map-wrap">
+        <div id="map" class="map" aria-label="恵比寿さんの地図"></div>
+      </div>
+      <div class="map-side">
+        <h2 id="map-title" class="section-title">恵比寿さんを巡る</h2>
+        <p class="map-status" id="geo-status" aria-live="polite">現在地を探しています…</p>
+        <label class="check flood-toggle">
+          <input type="checkbox" id="flood-layer">
+          浸水想定を地図に重ねる（想定最大規模）
+        </label>
+        <ol class="spot-list" id="spot-list"><!-- app.js が埋める --></ol>
+      </div>
+    </div>
+  </main>
+
+  <!-- 2. 恵比寿さんの前：水害 → 空 -->
+  <main id="view-spot" class="view page" aria-labelledby="spot-title" hidden>
+    <div class="spot-layout">
+      <div class="spot-water">
+        <a href="#/" class="btn btn-ghost btn-sm back-link">地図にもどる</a>
+        <h2 id="spot-title" class="spot-title"></h2>
+        <p class="spot-sub" id="spot-sub"></p>
+        <p class="spot-story" id="spot-story"></p>
+
+        <section class="card water" aria-labelledby="water-title">
+          <h3 id="water-title" class="card-title">この場所と水</h3>
+          <div class="depth" id="depth"><!-- app.js が埋める --></div>
+          <p class="card-body" id="water-story"></p>
+
+          <h4 class="sub-title">この恵比寿さんが見てきた水害</h4>
+          <ol class="timeline" id="flood-timeline"></ol>
+          <p class="card-meta">佐賀市全体の記録です。この場所で何cm浸かったかの記録は、まだ見つかっていません。</p>
+        </section>
+
+        <a href="#sky-section" class="btn btn-primary to-sky" id="to-sky">この場所から見えた空へ</a>
+      </div>
+
+      <section class="spot-sky" id="sky-section" aria-labelledby="sky-title">
+        <h3 id="sky-title" class="section-title">ここから見えた空</h3>
+
+        <div role="tablist" aria-label="どの年の空を見るか" class="tabs" id="year-tabs">
+          <button role="tab" id="tab-built" aria-selected="true" aria-controls="sky-panel" tabindex="0">建った年</button>
+          <button role="tab" id="tab-now" aria-selected="false" aria-controls="sky-panel" tabindex="-1">今年</button>
+        </div>
+
+        <div role="tabpanel" id="sky-panel" aria-labelledby="tab-built" class="sky-panel">
+          <div class="sky-wrap" id="sky-wrap">
+            <!-- かざすモードのときだけ、カメラの映像を星の後ろに出す -->
+            <video id="sky-video" class="sky-video" playsinline muted hidden></video>
+            <canvas id="sky" role="img" aria-label="星空"></canvas>
+            <p class="sky-caption" id="sky-caption" aria-live="polite"></p>
+
+            <div class="ar-bar" id="ar-bar" hidden>
+              <div class="ar-era" role="group" aria-label="重ねる空">
+                <button type="button" class="btn btn-sm" id="ar-now" aria-pressed="true">今の空</button>
+                <button type="button" class="btn btn-sm" id="ar-past" aria-pressed="false">建った年の空</button>
+              </div>
+              <div class="ar-night">
+                <button type="button" class="switch" role="switch" aria-checked="true" id="ar-night">
+                  <span class="switch-thumb"></span>
+                </button>
+                <label for="ar-night">夜モード</label>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="ar-close">やめる</button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button type="button" class="btn btn-primary" id="btn-orient">スマホを空にかざす</button>
+            <button type="button" class="btn btn-secondary" id="btn-mode" aria-pressed="false">全天を見る</button>
+            <div class="dir-buttons" role="group" aria-label="見る方角">
+              <button type="button" class="btn btn-ghost btn-sm" data-az="0">北</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-az="90">東</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-az="180">南</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-az="270">西</button>
+            </div>
+            <div class="field time-field">
+              <label for="time" class="field-label">時刻 <output id="time-out" for="time">20:00</output></label>
+              <input type="range" id="time" min="18" max="28" step="0.25" value="20">
+            </div>
+          </div>
+
+          <section class="card story" aria-labelledby="story-title">
+            <h4 class="card-title" id="story-title"></h4>
+            <p class="card-body" id="story-body"></p>
+            <ul class="visible-list" id="visible-list"></ul>
+            <p class="card-meta" id="story-meta"></p>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="credits page">
+    地図：<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>／
+    浸水想定：<a href="https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html">ハザードマップポータルサイト</a>／
+    地図の表示：<a href="https://leafletjs.com/">Leaflet</a>（BSD-2-Clause）／
+    星の位置：<a href="https://github.com/cosinekitty/astronomy">Astronomy Engine</a>（MIT）／
+    星のデータ：Yale Bright Star Catalog（<a href="https://github.com/brettonw/YaleBrightStarCatalog">brettonw 版</a>、MIT）
+  </footer>
+
+  <script src="./vendor/leaflet/leaflet.js"></script>
+  <script src="./vendor/astronomy.browser.min.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -19,6 +19,8 @@
 ├── .kiro/steering/      # Kiro 用 steering。AGENTS.md を参照
 ├── .cursor/rules/       # Cursor 用 rules。AGENTS.md を参照
 ├── planning/            # 企画資料（コンセプト、ペルソナ、議事メモ、デモ用データ）
+├── prototype/           # 試作
+│   └── sanpo/           # えびす時空さんぽ（地図 → 水害 → 星空）
 ├── docs/                # デプロイ先ごとのナレッジ
 │   ├── cloudflare/
 │   ├── netlify/
