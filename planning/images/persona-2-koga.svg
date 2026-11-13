@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 560" width="480" height="560" font-family="'Noto Sans JP', 'Hiragino Sans', system-ui, sans-serif">
+  <title>ペルソナ2 古賀昭夫さん（白山名店街の精肉店店主）</title>
+  <defs>
+    <clipPath id="frame"><rect x="24" y="24" width="432" height="320" rx="12"/></clipPath>
+  </defs>
+  <rect x="0.5" y="0.5" width="479" height="559" rx="12" fill="#ffffff" stroke="#d0d5dd"/>
+
+  <g clip-path="url(#frame)">
+    <rect x="24" y="24" width="432" height="320" fill="#fdf1e4"/>
+    <!-- 背景：店ののれんとショーケース -->
+    <rect x="24" y="24" width="432" height="58" fill="#0f766e"/>
+    <line x1="132" y1="24" x2="132" y2="82" stroke="#fdf1e4" stroke-width="3"/>
+    <line x1="240" y1="24" x2="240" y2="82" stroke="#fdf1e4" stroke-width="3"/>
+    <line x1="348" y1="24" x2="348" y2="82" stroke="#fdf1e4" stroke-width="3"/>
+    <text x="78" y="62" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">精</text>
+    <text x="186" y="62" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">肉</text>
+    <text x="294" y="62" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">古</text>
+    <text x="402" y="62" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">賀</text>
+    <rect x="24" y="282" width="432" height="62" fill="#e9d3b8"/>
+    <rect x="24" y="282" width="432" height="8" fill="#d4b994"/>
+
+    <!-- 恵比寿さんの像（左下、小さく） -->
+    <ellipse cx="78" cy="282" rx="34" ry="8" fill="#a8a29e"/>
+    <path d="M50 280 Q50 228 78 226 Q106 228 106 280 Z" fill="#b8b2ab"/>
+    <circle cx="78" cy="214" r="20" fill="#c9c3bc"/>
+    <path d="M60 206 Q78 184 96 206 Z" fill="#a8a29e"/>
+    <path d="M70 218 Q78 224 86 218" fill="none" stroke="#7c7670" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="98" cy="252" rx="14" ry="7" fill="#a8a29e"/>
+
+    <!-- 古賀さん -->
+    <path d="M128 344 Q130 252 240 246 Q350 252 352 344 Z" fill="#ffffff"/>
+    <path d="M128 344 Q130 252 240 246 Q350 252 352 344 Z" fill="none" stroke="#d0d5dd" stroke-width="2"/>
+    <path d="M196 262 L284 262 L304 344 L176 344 Z" fill="#7a4b2a"/>
+    <line x1="196" y1="262" x2="186" y2="250" stroke="#7a4b2a" stroke-width="5"/>
+    <line x1="284" y1="262" x2="294" y2="250" stroke="#7a4b2a" stroke-width="5"/>
+    <rect x="222" y="216" width="36" height="34" fill="#dfae84"/>
+    <circle cx="178" cy="176" r="12" fill="#dfae84"/>
+    <circle cx="302" cy="176" r="12" fill="#dfae84"/>
+    <circle cx="240" cy="168" r="62" fill="#e8bb92"/>
+    <!-- 白い帽子 -->
+    <path d="M176 140 Q178 92 240 90 Q302 92 304 140 Z" fill="#ffffff" stroke="#d0d5dd" stroke-width="2"/>
+    <rect x="174" y="132" width="132" height="14" rx="4" fill="#f4f5f7" stroke="#d0d5dd" stroke-width="2"/>
+    <!-- 白髪のもみあげ -->
+    <path d="M178 146 L186 146 L186 176 Q180 170 178 160 Z" fill="#c6c9ce"/>
+    <path d="M302 146 L294 146 L294 176 Q300 170 302 160 Z" fill="#c6c9ce"/>
+    <!-- 眉・目（笑い目）・めがね -->
+    <path d="M206 160 L226 158" stroke="#9aa0a8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M254 158 L274 160" stroke="#9aa0a8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M208 176 Q217 168 226 176" fill="none" stroke="#1f2328" stroke-width="3" stroke-linecap="round"/>
+    <path d="M254 176 Q263 168 272 176" fill="none" stroke="#1f2328" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="217" cy="175" r="15" fill="none" stroke="#5b6370" stroke-width="2.5"/>
+    <circle cx="263" cy="175" r="15" fill="none" stroke="#5b6370" stroke-width="2.5"/>
+    <line x1="232" y1="174" x2="248" y2="174" stroke="#5b6370" stroke-width="2.5"/>
+    <!-- しわ・口 -->
+    <path d="M196 196 Q200 204 198 210" fill="none" stroke="#c99a70" stroke-width="2" stroke-linecap="round"/>
+    <path d="M284 196 Q280 204 282 210" fill="none" stroke="#c99a70" stroke-width="2" stroke-linecap="round"/>
+    <path d="M218 202 Q240 222 262 202" fill="#9b3b2f" stroke="#1f2328" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- コロッケ（右下） -->
+    <ellipse cx="392" cy="276" rx="26" ry="16" fill="#c98a3e"/>
+    <ellipse cx="420" cy="270" rx="22" ry="14" fill="#d79a4a"/>
+    <circle cx="386" cy="272" r="2" fill="#a8692a"/>
+    <circle cx="398" cy="280" r="2" fill="#a8692a"/>
+    <circle cx="418" cy="266" r="2" fill="#b47634"/>
+  </g>
+
+  <rect x="40" y="96" width="72" height="28" rx="14" fill="#0f766e"/>
+  <text x="76" y="115" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">書く人</text>
+
+  <text x="24" y="390" font-size="24" font-weight="700" fill="#1f2328">古賀 昭夫さん（67）</text>
+  <text x="24" y="418" font-size="14" fill="#5b6370">白山名店街（佐賀市）の精肉店店主／名物は手作りコロッケ</text>
+  <line x1="24" y1="440" x2="456" y2="440" stroke="#d0d5dd"/>
+  <text x="24" y="472" font-size="16" fill="#1f2328">「この恵比寿さんはね、わしが子どものころから、</text>
+  <text x="24" y="498" font-size="16" fill="#1f2328">　ずっとここにおらすとよ」</text>
+  <text x="24" y="534" font-size="12" fill="#5b6370">入力は代理で／店員画面は大きいボタン1つ</text>
+</svg>

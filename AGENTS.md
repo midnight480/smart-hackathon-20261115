@@ -18,6 +18,7 @@
 ├── .claude/skills/      # プロジェクト用スキル（unslop: UI の AI っぽさ除去 / yomiyasu: 日本語の推敲）
 ├── .kiro/steering/      # Kiro 用 steering。AGENTS.md を参照
 ├── .cursor/rules/       # Cursor 用 rules。AGENTS.md を参照
+├── planning/            # 企画資料（コンセプト、ペルソナ、議事メモ、デモ用データ）
 ├── docs/                # デプロイ先ごとのナレッジ
 │   ├── cloudflare/
 │   ├── netlify/

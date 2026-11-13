@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 560" width="480" height="560" font-family="'Noto Sans JP', 'Hiragino Sans', system-ui, sans-serif">
+  <title>ペルソナ1 中村彩さん・健太さん（福岡市在住のカップル）</title>
+  <defs>
+    <clipPath id="frame"><rect x="24" y="24" width="432" height="320" rx="12"/></clipPath>
+  </defs>
+  <rect x="0.5" y="0.5" width="479" height="559" rx="12" fill="#ffffff" stroke="#d0d5dd"/>
+
+  <g clip-path="url(#frame)">
+    <rect x="24" y="24" width="432" height="320" fill="#e8f0fd"/>
+    <!-- 背景：駅のホームと電車 -->
+    <rect x="24" y="250" width="432" height="94" fill="#d6e3fa"/>
+    <rect x="24" y="96" width="432" height="56" rx="8" fill="#ffffff" opacity="0.7"/>
+    <rect x="48" y="108" width="40" height="28" rx="4" fill="#bcd2f7"/>
+    <rect x="100" y="108" width="40" height="28" rx="4" fill="#bcd2f7"/>
+    <rect x="340" y="108" width="40" height="28" rx="4" fill="#bcd2f7"/>
+    <rect x="392" y="108" width="40" height="28" rx="4" fill="#bcd2f7"/>
+
+    <!-- 彩さん（左） -->
+    <path d="M90 344 Q92 268 175 262 Q258 268 260 344 Z" fill="#f2a7a0"/>
+    <path d="M150 262 L175 292 L200 262 Z" fill="#ffffff"/>
+    <rect x="160" y="236" width="30" height="30" fill="#f1c9a5"/>
+    <path d="M118 200 Q116 132 175 130 Q234 132 232 200 L232 238 Q218 230 214 214 L136 214 Q132 230 118 238 Z" fill="#5a3a2a"/>
+    <circle cx="175" cy="196" r="50" fill="#f6d3b3"/>
+    <path d="M125 190 Q128 142 175 140 Q222 142 225 190 Q205 168 172 166 Q150 166 125 190 Z" fill="#5a3a2a"/>
+    <circle cx="157" cy="200" r="4.5" fill="#1f2328"/>
+    <circle cx="193" cy="200" r="4.5" fill="#1f2328"/>
+    <circle cx="146" cy="214" r="7" fill="#f2a7a0" opacity="0.5"/>
+    <circle cx="204" cy="214" r="7" fill="#f2a7a0" opacity="0.5"/>
+    <path d="M161 220 Q175 232 189 220" fill="none" stroke="#1f2328" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- 健太さん（右） -->
+    <path d="M220 344 Q222 256 305 250 Q388 256 390 344 Z" fill="#3d5a80"/>
+    <path d="M282 250 L305 278 L328 250 Z" fill="#e8edf3"/>
+    <rect x="290" y="222" width="30" height="32" fill="#e8b98f"/>
+    <circle cx="305" cy="182" r="52" fill="#efc6a0"/>
+    <circle cx="253" cy="186" r="10" fill="#e8b98f"/>
+    <circle cx="357" cy="186" r="10" fill="#e8b98f"/>
+    <path d="M253 176 Q250 124 305 122 Q362 124 357 176 Q350 150 322 148 Q300 160 270 152 Q258 160 253 176 Z" fill="#2b2b2b"/>
+    <path d="M280 172 L296 170" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round"/>
+    <path d="M314 170 L330 172" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="288" cy="186" r="4.5" fill="#1f2328"/>
+    <circle cx="322" cy="186" r="4.5" fill="#1f2328"/>
+    <path d="M290 206 Q305 218 320 206" fill="none" stroke="#1f2328" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- 健太さんのスマホ（地図） -->
+    <rect x="352" y="252" width="44" height="74" rx="7" fill="#1f2328"/>
+    <rect x="356" y="258" width="36" height="60" rx="3" fill="#e9f5ef"/>
+    <path d="M358 300 Q370 280 390 286" stroke="#9fc9b5" stroke-width="3" fill="none"/>
+    <circle cx="374" cy="278" r="6" fill="#b91c1c"/>
+    <circle cx="374" cy="278" r="2.5" fill="#ffffff"/>
+    <ellipse cx="360" cy="320" rx="14" ry="10" fill="#e8b98f"/>
+  </g>
+
+  <rect x="40" y="40" width="72" height="28" rx="14" fill="#2563eb"/>
+  <text x="76" y="59" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">巡る人</text>
+
+  <text x="24" y="390" font-size="24" font-weight="700" fill="#1f2328">中村 彩さん（32）・健太さん（34）</text>
+  <text x="24" y="418" font-size="14" fill="#5b6370">福岡市在住のカップル／医療事務・IT 企業の営業</text>
+  <line x1="24" y1="440" x2="456" y2="440" stroke="#d0d5dd"/>
+  <text x="24" y="472" font-size="16" fill="#1f2328">「どこ行く？ もう近場は</text>
+  <text x="24" y="498" font-size="16" fill="#1f2328">　行き尽くした感あるよね」</text>
+  <text x="24" y="534" font-size="12" fill="#5b6370">ブラウザだけで遊びたい／まず1回勝ちたい</text>
+</svg>
