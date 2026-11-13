@@ -1,0 +1,13 @@
+{
+  // 試作「えびす時空さんぽ」（prototype/sanpo）を Workers の Static Assets で公開する設定。
+  // 先に scripts/build-sanpo.sh で dist/ を作ってから wrangler を動かす。
+  // 公開先は Cloudflare Access でチームだけに絞る（手順は docs/cloudflare/README.md）。
+  "name": "ebisu-sanpo",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist"
+  },
+  "workers_dev": true,
+  // Version URLs は workers.dev とは別の URL になる。Access を掛け忘れないよう、使わない
+  "preview_urls": false
+}

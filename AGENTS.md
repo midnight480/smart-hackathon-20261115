@@ -21,6 +21,8 @@
 ├── planning/            # 企画資料（コンセプト、ペルソナ、議事メモ、デモ用データ）
 ├── prototype/           # 試作
 │   └── sanpo/           # えびす時空さんぽ（地図 → 水害 → 星空）
+├── scripts/             # ビルド用スクリプト（build-sanpo.sh: 試作を dist/ に集める / deploy-sanpo.sh: デプロイして Access を確認）
+├── wrangler.jsonc       # Cloudflare Workers の設定（試作を公開する）
 ├── docs/                # デプロイ先ごとのナレッジ
 │   ├── cloudflare/
 │   ├── netlify/
