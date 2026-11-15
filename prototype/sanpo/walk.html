@@ -15,6 +15,8 @@
     <video id="walk-video" class="walk-video" playsinline muted hidden></video>
     <canvas id="walk-canvas" class="walk-canvas" role="img" aria-label="えびすさんが道を歩いている"></canvas>
 
+    <!-- 上のボタンと状況。ボタンが2段になっても、状況の文はその下に来る -->
+    <div class="walk-top" id="walk-top">
     <div class="walk-bar">
       <a href="./" class="btn btn-secondary btn-sm">もどる</a>
       <button type="button" class="btn btn-primary btn-sm" id="btn-camera">カメラで見る</button>
@@ -25,6 +27,7 @@
     </div>
 
     <p class="walk-status" id="walk-status" aria-live="polite"></p>
+    </div>
 
     <!-- ポイントと、受けているクエスト -->
     <div class="walk-hud" id="walk-hud">
@@ -72,6 +75,27 @@
       <div class="modal-actions">
         <button value="quiz" class="btn btn-secondary" id="guide-quiz-btn">知恵くらべを受ける</button>
         <button value="ok" class="btn btn-primary" autofocus>行ってみる</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- えびす像の場所に着いた。写真を撮ると動き出す -->
+  <dialog class="modal walk-dialog arrive-dialog" id="arrive-dialog" aria-labelledby="arrive-name">
+    <form method="dialog">
+      <p class="walk-dialog-kicker">えびす像に会えました</p>
+      <p class="join-grade" id="arrive-grade"></p>
+      <h2 class="modal-title" id="arrive-name"></h2>
+      <p class="walk-demo-note" id="arrive-address"></p>
+      <img id="arrive-ref" class="arrive-ref" alt="" width="120" height="120">
+      <p id="arrive-lead"></p>
+      <label class="btn btn-primary arrive-shoot">
+        写真を撮る
+        <input type="file" accept="image/*" capture="environment" id="arrive-photo-input" class="visually-hidden">
+      </label>
+      <p class="walk-demo-note">撮った写真はこの端末の中だけに置きます。どこにも送りません。お店や家の敷地の像は、外から撮ってください。</p>
+      <p class="walk-demo-note"><a id="arrive-link" target="_blank" rel="noopener">公式サイトでこの像を見る</a>（上の写真：© 恵比須DEまちづくりネットワーク）</p>
+      <div class="modal-actions">
+        <button value="ok" class="btn btn-secondary">あとで</button>
       </div>
     </form>
   </dialog>

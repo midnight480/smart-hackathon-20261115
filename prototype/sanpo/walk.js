@@ -14,6 +14,7 @@ import { initQuests, makeQuest, openPrefs, prefsText, questText, TYPE_NAMES } fr
 import { initQuiz, startQuiz, askOne, rule as quizRule, challengeId } from './quiz.js';
 import { initGacha } from './gacha.js';
 import { initSelfie } from './selfie.js';
+import * as statues from './statues.js';
 import { gradeOf } from './rarity.js';
 import { initEvents, currentEvent, pointsMultiplier } from './events.js';
 
@@ -97,6 +98,7 @@ const state = {
   nextSageAt: 0,
   statues: [], // 実在のえびす像 [{ id, name, n, e }]
   chapters: [], // 図鑑の弾（エリア）
+  stills: [], // 近くに立っているえびす像（本当の場所。まだ動き出していないもの）
   others: [], // 同じクエストに挑戦中のほかの参加者（デモでは架空）{ name, questType, s, dir, marker }
   guides: [],
   hits: [], // 押せる範囲（描いたときの外枠）
@@ -219,7 +221,7 @@ function draw(time) {
   // 遠いものから描く（近いものが手前に重なる）
   state.hits = [];
   state.labels = [];
-  const sorted = [...state.walkers].sort((a, b) => distTo(posOf(b)) - distTo(posOf(a)));
+  const sorted = [...state.walkers, ...state.stills].sort((a, b) => distTo(posOf(b)) - distTo(posOf(a)));
   for (const wk of sorted) drawWalker(wk, project, time, dpr);
 }
 
@@ -449,7 +451,8 @@ function drawWalker(wk, project, time, dpr) {
   state.hits.push({ wk, x0: feet[0] - half, x1: feet[0] + half, y0: top, y1: feet[1] });
 
   // 名前と距離
-  const label = wk.kind === 'party' ? `仲間：${wk.sage.name}` : wk.kind === 'ebisu'
+  const label = wk.statue ? `【${wk.statue.grade}】${wk.statue.name} ${Math.round(distTo(p))}m${wk.kind === 'awake' ? '（動き出した）' : ''}`
+    : wk.kind === 'party' ? `仲間：${wk.sage.name}` : wk.kind === 'ebisu'
     ? `えびすさん ${Math.round(distTo(p))}m`
     : `【${wk.sage.grade}】${wk.sage.name} ${Math.round(distTo(p))}m`;
   ctx.font = `${14 * dpr}px ${css('--font-family')}`;
@@ -658,6 +661,7 @@ function tick(time) {
   state.walkers = state.walkers.filter((wk) => !wk.until || wk.until > t);
   updateParty(dt);
   updateOthers(dt);
+  statues.updateAwake(dt);
 
   // ときどき七賢人が現れる
   if (t >= state.nextSageAt && state.sages.length) {
@@ -681,6 +685,7 @@ function tick(time) {
 }
 
 let lastStatus = 0;
+let chars0 = null; // data/characters.json（えびす像の背の高さに使う）
 function updateStatus() {
   const now = performance.now();
   if (now - lastStatus < 500) return;
@@ -695,6 +700,9 @@ function updateStatus() {
   $('walk-status').textContent =
     `${where}：えびすさんは${dirName(bearing(state.user, p))}に ${Math.round(distTo(p))}m／${look}${rare}`;
   checkArrivals();
+  statues.checkArrive(state.user);
+  statues.wakeNearby(state.user);
+  updateStills();
   updateHud();
   const party = progress.get().party.map((id) => state.sages.find((s) => s.id === id)?.name).filter(Boolean);
   const ev = currentEvent();
@@ -833,6 +841,21 @@ function showSageJoin(sage, pts, at) {
 function nextSageLeft() {
   if (sagesEarned() >= state.sages.length) return null;
   return SAGE_EVERY - (progress.ebisuCount() % SAGE_EVERY);
+}
+
+// 近くのえびす像を、本当の場所に立たせる（動き出した像は、歩く人として別に出す）
+const stillCache = new Map();
+function updateStills() {
+  const moving = statues.awakeFids();
+  state.stills = statues.nearby(state.user).filter((it) => !moving.has(it.fid)).map((it) => {
+    if (!stillCache.has(it.fid)) {
+      stillCache.set(it.fid, {
+        kind: 'still', statue: it, height: chars0.ebisu.heightM ?? STATUE_HEIGHT_M, moving: false,
+        pos: { n: it.n, e: it.e, heading: 0 }, views: state.ebisu.views, board: state.ebisu.board,
+      });
+    }
+    return stillCache.get(it.fid);
+  });
 }
 
 // 七賢人に出会った（押した）
@@ -1041,6 +1064,11 @@ function setupInput() {
       const hit = [...state.hits].reverse().find((b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1);
       if (hit?.wk.kind === 'sage') { showCard(hit.wk.sage); meetSage(hit.wk.sage); }
       if (hit?.wk.kind === 'party') showCard(hit.wk.sage);
+      if (hit?.wk.kind === 'still' || hit?.wk.kind === 'awake') {
+        const it = hit.wk.statue;
+        if (statues.isNear(it, state.user)) statues.openArrive(it);
+        else toast(`【${it.grade}】${it.name}：あと ${Math.round(distTo(it))}m。そばまで行くとポイント、写真を撮ると動き出す`);
+      }
     }
     drag = null;
   });
@@ -1159,6 +1187,7 @@ async function main() {
   });
   const ebisuViews = makeViews({ imgs: ebisuImgs, faces: chars.ebisu.faces, sideFaces: chars.ebisu.sideFaces, draw: () => drawEbisu(0) });
   const ebisuBoard = (ebisuViews.front ?? ebisuViews.right).board;
+  chars0 = chars;
   const coords = route.coordinates;
   state.origin = { lat: coords[0][1], lng: coords[0][0] };
   let s = 0;
@@ -1204,6 +1233,10 @@ async function main() {
     state.nextSageAt = t + 5;
   }
 
+  // 上のボタンと状況の文の高さ（ボタンが折り返すと変わる）を、人物の紹介カードの位置に使う
+  new ResizeObserver(([e]) => {
+    $('walk').style.setProperty('--walk-top-h', `${Math.ceil(e.target.getBoundingClientRect().height)}px`);
+  }).observe($('walk-top'));
   setupMap(coords);
   setupInput();
   const bookEntries = [
@@ -1233,6 +1266,12 @@ async function main() {
   initQuiz({ quiz, sages: state.sages, onEnd: () => updateHud() });
   // ガチャで出るのはえびす像だけ（七賢人は、えびす像を集めると仲間になる）
   initGacha({ entries: [...bookEntries.filter((e) => e.key.startsWith('ebisu:')), ...catalogEntries], credit: catalog.credit });
+  // 本当の場所にいるえびす像（歩いて行ける像と同じものは除く）
+  const skipFids = ebisuData.ebisu.map((e) => Number(/fid=(\d+)/.exec(e.officialUrl ?? '')?.[1])).filter(Boolean);
+  statues.initStatues({
+    catalog, skipFids, toLocal, makeViews, boost: boosted, arriveM: ARRIVE_M, map: state.map, css,
+  });
+  statues.setOnWake((wk) => state.walkers.push(wk));
   progress.onCollect((key) => { if (key.startsWith('ebisu:') || key.startsWith('cat:')) setTimeout(checkSageUnlocks, 600); });
   checkSageUnlocks();
   initSelfie({ sages: state.sages, ebisuBoard });

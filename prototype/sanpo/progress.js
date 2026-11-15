@@ -202,6 +202,28 @@ export function collect(key, label, points) {
   return true;
 }
 
+// 現地に行った（えびす像の位置まで行った）。はじめてなら true
+export function visit(key, label, points) {
+  data.visited ??= {};
+  if (data.visited[key]) return false;
+  data.visited[key] = new Date().toISOString();
+  addPoints(points, `${label}に会いに行った`);
+  save();
+  return true;
+}
+export const visited = (key) => Boolean(data.visited?.[key]);
+
+// 写真を撮って動き出させた。はじめてなら true
+export function awaken(key, label, points) {
+  data.awake ??= {};
+  if (data.awake[key]) return false;
+  data.awake[key] = new Date().toISOString();
+  addPoints(points, `${label}が動き出した`);
+  save();
+  return true;
+}
+export const isAwake = (key) => Boolean(data.awake?.[key]);
+
 // 図鑑に何か増えたときに呼ぶ（七賢人が仲間になる条件を確かめるため）
 const collectListeners = [];
 export const onCollect = (fn) => collectListeners.push(fn);
