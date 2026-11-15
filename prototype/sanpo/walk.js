@@ -601,6 +601,13 @@ function drawSage(sage, phase) {
   ctx.beginPath(); ctx.arc(0, 30, 3, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
+  // 肖像写真があれば、顔を写真にする（頭を大きめにした、ちびキャラの顔はめ）
+  if (sage.portraitImg) {
+    drawPortraitHead(sage.portraitImg, sage.portrait);
+    ctx.restore();
+    return;
+  }
+
   // 顔
   drawFace(2, -89, 10, false);
   if (sage.beard) {
@@ -620,6 +627,31 @@ function drawSage(sage, phase) {
   }
 
   ctx.restore();
+}
+
+// 写真の顔を、だ円に切り抜いて頭の位置に置く。
+// p = { cx, cy, ry, flip }：顔の中心（写真の幅・高さに対する割合）と、顔の縦の半径（高さに対する割合）。
+// flip は、写真の顔が左を向いているとき（描いた体は右向きなので、合わせて反転する）
+const HEAD = { x: 2, y: -94, rx: 15, ry: 18 };
+function drawPortraitHead(img, p) {
+  const W = img.naturalWidth; const H = img.naturalHeight;
+  const sh = p.ry * H * 2;
+  const sw = sh * (HEAD.rx / HEAD.ry);
+  const sx = p.cx * W - sw / 2; const sy = p.cy * H - sh / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(HEAD.x, HEAD.y, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.translate(HEAD.x, HEAD.y);
+  if (p.flip) ctx.scale(-1, 1);
+  ctx.drawImage(img, sx, sy, sw, sh, -HEAD.rx, -HEAD.ry, HEAD.rx * 2, HEAD.ry * 2);
+  ctx.restore();
+  // 写真のふち
+  ctx.strokeStyle = css('--walk-hat');
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(HEAD.x, HEAD.y, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 // ---------- 動き ----------
@@ -826,6 +858,7 @@ function showSageJoin(sage, pts, at) {
   $('join-grade').dataset.grade = sage.grade;
   $('join-name').textContent = `${sage.name}が仲間になった！`;
   $('join-bio').textContent = sage.bio;
+  setCredit($('join-credit'), sage);
   $('join-points').textContent = `+${boosted(pts)}pt。パーティーに加わり、後ろに付いてきます`;
   const c = $('join-canvas');
   c.getContext('2d').clearRect(0, 0, c.width, c.height);
@@ -1024,12 +1057,19 @@ function setUser(p) {
 
 // ---------- 人物の紹介 ----------
 
+// 顔写真の出典（写真を使っている七賢人だけ）
+function setCredit(el, sage) {
+  el.hidden = !sage.portraitImg;
+  el.textContent = sage.portraitImg ? `顔写真：${sage.portrait.credit.replace(/^出典：/, '')}` : '';
+}
+
 function showCard(sage) {
   $('card-rarity').textContent = `${sage.grade}（${gradeOf(sage.grade).name}）`;
   $('card-rarity').dataset.grade = sage.grade;
   $('card-name').textContent = sage.name;
   $('card-years').textContent = sage.years;
   $('card-bio').textContent = sage.bio;
+  setCredit($('card-credit'), sage);
   $('walk-card').hidden = false;
   $('card-close').focus();
 }
@@ -1177,6 +1217,8 @@ async function main() {
     return Object.fromEntries(keys.map((k, i) => [k, imgs[i]]));
   };
   const [ebisuImgs, ...sageImgs] = await Promise.all([chars.ebisu, ...chars.sages].map(loadViews));
+  // 七賢人の肖像（国立国会図書館「近代日本人の肖像」）。読めなければ絵の顔のまま
+  await Promise.all(chars.sages.map(async (s) => { s.portraitImg = await loadImage(s.portrait?.src); }));
   const testMode = new URLSearchParams(location.search).get('views') === 'test';
   chars.sages.forEach((s, i) => {
     s.views = testMode ? testViews(s.color) : makeViews({

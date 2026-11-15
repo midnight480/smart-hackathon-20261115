@@ -468,3 +468,10 @@ body { background: var(--color-surface); overflow: hidden; }
 .arrive-shoot:focus-within { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .catalog-visited { font-weight: 700; color: var(--color-success); }
+
+/* 七賢人の顔写真の出典 */
+.portrait-credit {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  opacity: 0.75;
+}
