@@ -35,7 +35,16 @@
       "faces": "front",
       "heightM": 1.57,
       "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
-      "grade": "SSR"
+      "grade": "SSR",
+      "portrait": {
+        "src": "img/sages/naomasa.jpg",
+        "cx": 0.49,
+        "cy": 0.265,
+        "ry": 0.115,
+        "flip": true,
+        "credit": "出典：国立国会図書館「近代日本人の肖像」",
+        "url": "https://www.ndl.go.jp/portrait/datas/154/"
+      }
     },
     {
       "id": "sano",
@@ -53,7 +62,16 @@
       "faces": "front",
       "heightM": 1.57,
       "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
-      "grade": "R"
+      "grade": "R",
+      "portrait": {
+        "src": "img/sages/sano.jpg",
+        "cx": 0.49,
+        "cy": 0.255,
+        "ry": 0.17,
+        "flip": false,
+        "credit": "出典：国立国会図書館「近代日本人の肖像」",
+        "url": "https://www.ndl.go.jp/portrait/datas/94/"
+      }
     },
     {
       "id": "shima",
@@ -90,7 +108,16 @@
       "faces": "front",
       "heightM": 1.57,
       "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
-      "grade": "R"
+      "grade": "R",
+      "portrait": {
+        "src": "img/sages/soejima.jpg",
+        "cx": 0.52,
+        "cy": 0.3,
+        "ry": 0.19,
+        "flip": false,
+        "credit": "出典：国立国会図書館「近代日本人の肖像」",
+        "url": "https://www.ndl.go.jp/portrait/datas/115/"
+      }
     },
     {
       "id": "oki",
@@ -108,7 +135,16 @@
       "faces": "front",
       "heightM": 1.57,
       "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
-      "grade": "N"
+      "grade": "N",
+      "portrait": {
+        "src": "img/sages/oki.jpg",
+        "cx": 0.5,
+        "cy": 0.305,
+        "ry": 0.19,
+        "flip": false,
+        "credit": "出典：国立国会図書館「近代日本人の肖像」",
+        "url": "https://www.ndl.go.jp/portrait/datas/30/"
+      }
     },
     {
       "id": "eto",
@@ -126,7 +162,16 @@
       "faces": "front",
       "heightM": 1.57,
       "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
-      "grade": "SR"
+      "grade": "SR",
+      "portrait": {
+        "src": "img/sages/eto.jpg",
+        "cx": 0.5,
+        "cy": 0.29,
+        "ry": 0.2,
+        "flip": false,
+        "credit": "出典：国立国会図書館「近代日本人の肖像」",
+        "url": "https://www.ndl.go.jp/portrait/datas/242/"
+      }
     },
     {
       "id": "okuma",
@@ -144,7 +189,16 @@
       "faces": "front",
       "heightM": 1.8,
       "heightNote": "当時としては長身で、約180cmと伝わる",
-      "grade": "SR"
+      "grade": "SR",
+      "portrait": {
+        "src": "img/sages/okuma.jpg",
+        "cx": 0.51,
+        "cy": 0.22,
+        "ry": 0.14,
+        "flip": false,
+        "credit": "出典：国立国会図書館「近代日本人の肖像」",
+        "url": "https://www.ndl.go.jp/portrait/datas/33/"
+      }
     }
   ]
 }
