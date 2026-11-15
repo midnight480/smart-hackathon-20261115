@@ -1,5 +1,5 @@
 /*
- * えびすさんが歩く（試作）のスタイル。UI の色・余白・文字サイズは design/tokens.css のトークンを使う。
+ * えびすさんが歩く（さがもん！Go！ の AR 画面）のスタイル。UI の色・余白・文字サイズは design/tokens.css のトークンを使う。
  * --walk-* は UI ではなく絵の色（空・地面・道・えびすさん）なので、ここで定義する。
  */
 :root {
@@ -467,3 +467,4 @@ body { background: var(--color-surface); overflow: hidden; }
 .arrive-shoot { display: block; width: 100%; margin: var(--space-2) 0; font-size: var(--font-size-md); font-weight: 700; cursor: pointer; }
 .arrive-shoot:focus-within { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.catalog-visited { font-weight: 700; color: var(--color-success); }
