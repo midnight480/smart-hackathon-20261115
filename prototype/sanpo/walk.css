@@ -1,0 +1,469 @@
+/*
+ * えびすさんが歩く（試作）のスタイル。UI の色・余白・文字サイズは design/tokens.css のトークンを使う。
+ * --walk-* は UI ではなく絵の色（空・地面・道・えびすさん）なので、ここで定義する。
+ */
+:root {
+  --walk-sky: #1a2030;
+  --walk-ground: #2a2c30;
+  --walk-road: #f4d06f;
+  --walk-label: #f4f5f7;
+  --walk-shadow: #000000;
+  --walk-hat: #1f2328;
+  --walk-face: #f6d7b0;
+  --walk-robe: #c2410c;
+  --walk-robe-dark: #7c2d12;
+  --walk-hakama: #1e3a8a;
+  --walk-tai: #e11d48;
+  --walk-rod: #a16207;
+  --walk-rare: #fbbf24;
+  --walk-shadow-ground: rgba(0, 0, 0, 0.35);
+  --walk-hakama-gray: #4b5563;
+  --walk-collar: #f9fafb;
+  --walk-hair-gray: #9ca3af;
+  /* 板ポリゴン：表の縁取り（白）と、板の側面（ボール紙の色） */
+  --walk-board-face: #ffffff;
+  --walk-board-edge: #8b7355;
+}
+
+.walk-card {
+  position: absolute;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  right: max(var(--space-3), env(safe-area-inset-right));
+  top: calc(max(var(--space-3), env(safe-area-inset-top)) + var(--walk-top-h, 96px) + var(--space-2));
+  max-width: 420px;
+  margin-inline: auto;
+}
+.walk-card-rarity {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-warning);
+}
+.walk-card .card-body { margin-bottom: var(--space-3); }
+
+html, body { margin: 0; height: 100%; }
+body { background: var(--color-surface); overflow: hidden; }
+[hidden] { display: none !important; }
+
+.walk { position: fixed; inset: 0; }
+
+.walk-video,
+.walk-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.walk-video { object-fit: cover; }
+.walk-canvas { touch-action: none; }
+
+.walk-top {
+  position: absolute;
+  top: max(var(--space-3), env(safe-area-inset-top));
+  left: max(var(--space-3), env(safe-area-inset-left));
+  right: max(var(--space-3), env(safe-area-inset-right));
+  display: grid;
+  gap: var(--space-2);
+  pointer-events: none; /* 文の上でも、うしろの景色をドラッグできるように */
+}
+.walk-top .btn { pointer-events: auto; }
+.walk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.walk-status {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--walk-label);
+  text-shadow: 0 0 4px var(--walk-shadow), 0 0 2px var(--walk-shadow);
+}
+
+.walk-map-wrap {
+  position: absolute;
+  right: max(var(--space-3), env(safe-area-inset-right));
+  bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  width: min(40vw, 280px);
+}
+.walk-map {
+  height: min(40vw, 220px);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+.walk-map-note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--walk-label);
+  text-shadow: 0 0 4px var(--walk-shadow);
+}
+
+.walk-route {
+  stroke: var(--walk-road);
+  stroke-width: 4;
+  fill: none;
+}
+
+.walk-credit {
+  position: fixed;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  bottom: max(var(--space-1), env(safe-area-inset-bottom));
+  margin: 0;
+  max-width: 50vw;
+  font-size: var(--font-size-xs);
+  color: var(--walk-label);
+  text-shadow: 0 0 4px var(--walk-shadow);
+}
+.walk-credit a { color: inherit; }
+
+@media (max-width: 639px) {
+  .walk-map-wrap { width: 44vw; bottom: calc(max(var(--space-3), env(safe-area-inset-bottom)) + 28px); }
+  .walk-map { height: 36vw; }
+}
+
+/* ---------- ポイントとクエスト ---------- */
+
+.walk-hud {
+  position: absolute;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  bottom: calc(max(var(--space-3), env(safe-area-inset-bottom)) + 28px);
+  max-width: min(52vw, 360px);
+  display: grid;
+  gap: var(--space-2);
+}
+.walk-points,
+.walk-quest {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+.walk-points strong { font-size: var(--font-size-lg); color: var(--walk-rare); }
+.walk-quest { border-color: var(--walk-rare); }
+
+.walk-toast {
+  position: absolute;
+  left: 50%;
+  top: calc(max(var(--space-3), env(safe-area-inset-top)) + 96px);
+  transform: translateX(-50%);
+  max-width: calc(100vw - 2 * var(--space-4));
+  z-index: 10;
+}
+
+/* ---------- ダイアログ（案内人・図鑑） ---------- */
+
+.walk-dialog {
+  width: min(92vw, 480px);
+  max-height: 86dvh;
+  overflow-y: auto;
+}
+.walk-dialog-kicker {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-warning);
+}
+.walk-talk {
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--color-border);
+}
+.walk-quest-card {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--walk-rare);
+  border-radius: var(--radius-md);
+}
+.walk-quest-card p:last-child { margin-bottom: 0; }
+.walk-demo-note { font-size: var(--font-size-xs); color: var(--color-on-surface-muted); }
+
+.zukan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+}
+.zukan li {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+.zukan canvas { width: 64px; height: 80px; }
+.zukan .is-missing { color: var(--color-on-surface-muted); }
+.zukan .grade-badge { justify-self: center; }
+
+.walk-segment { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-3); }
+.walk-segment .btn {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border: 1px solid var(--color-border);
+}
+.walk-segment .btn[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
+.ranking { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
+.ranking li { padding: var(--space-1) 0; }
+.ranking li.is-me { font-weight: 700; color: var(--color-primary); }
+.ranking .ranking-value { float: right; font-variant-numeric: tabular-nums; }
+
+.points-log { margin: 0 0 var(--space-4); padding-left: var(--space-4); font-size: var(--font-size-sm); }
+.walk-demo-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+
+@media (max-width: 639px) {
+  .walk-hud { bottom: calc(max(var(--space-3), env(safe-area-inset-bottom)) + 36vw + 104px); max-width: calc(100vw - 2 * var(--space-3)); }
+}
+.walk-quest { white-space: pre-line; }
+
+/* ---------- パーティーと知恵くらべ ---------- */
+
+.walk-party {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.walk-quiz-q { font-size: var(--font-size-md); font-weight: 700; }
+.walk-quiz-choices { display: grid; gap: var(--space-2); margin-bottom: var(--space-3); }
+.walk-quiz-choices .btn { justify-content: flex-start; width: 100%; }
+.walk-quiz-choices .btn.is-correct { background: var(--color-success); color: var(--color-surface); border-color: var(--color-success); }
+.walk-quiz-choices .btn.is-wrong { background: var(--color-danger); color: var(--color-surface); border-color: var(--color-danger); }
+.walk-quiz-choices .btn.is-removed { opacity: 0.35; text-decoration: line-through; }
+.zukan .zukan-section {
+  grid-column: 1 / -1;
+  justify-items: start;
+  text-align: left;
+  border: 0;
+  padding: var(--space-3) 0 0;
+  font-size: var(--font-size-sm);
+}
+.zukan .zukan-section span { color: var(--color-on-surface-muted); font-size: var(--font-size-xs); }
+
+/* 同じクエストに挑戦中のほかの参加者（地図の点と名前） */
+:root { --walk-other: #16a34a; }
+.walk-other-tip {
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border-color: var(--color-border);
+}
+
+/* ---------- ガチャ ---------- */
+:root {
+  --gacha-body: #dc2626;
+  --gacha-body-dark: #991b1b;
+  --gacha-gold: #fbbf24;
+  --gacha-cap-red: #ef4444;
+  --gacha-cap-blue: #3b82f6;
+  --gacha-cap-green: #22c55e;
+  --gacha-cap-pink: #ec4899;
+  --gacha-rainbow: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+}
+#gacha-pay { width: 100%; margin: var(--space-2) 0 var(--space-3); font-size: var(--font-size-md); font-weight: 700; }
+.gacha-stage-wrap { position: relative; display: grid; justify-items: center; }
+.gacha-stage { width: 320px; max-width: 100%; aspect-ratio: 320 / 280; cursor: pointer; }
+.gacha-tap {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  animation: gacha-bounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes gacha-bounce { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+.gacha-fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; }
+
+.gacha-result {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  margin-top: var(--space-2);
+  padding: 4px;
+  border: 0;
+  background: var(--walk-rare);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  isolation: isolate;
+}
+.gacha-result-inner {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: calc(var(--radius-md) - 3px);
+  background: var(--color-surface);
+}
+.gacha-result p { margin: var(--space-1) 0 0; }
+.gacha-result canvas { width: 128px; height: 160px; }
+.gacha-result.is-shown canvas { animation: gacha-pop 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.gacha-result.is-shown #gacha-rarity { animation: gacha-stamp 500ms 300ms cubic-bezier(0.2, 1.8, 0.4, 1) both; }
+@keyframes gacha-pop {
+  from { transform: scale(0.2) rotateY(540deg); opacity: 0; }
+  to { transform: scale(1) rotateY(0); opacity: 1; }
+}
+@keyframes gacha-stamp {
+  from { transform: scale(3) rotate(-12deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+/* カードを横切る光 */
+.gacha-result::after {
+  content: '';
+  position: absolute;
+  inset: -50% auto -50% -60%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: rotate(20deg);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+.gacha-result.is-shown::after { animation: gacha-shine 1.6s 0.5s ease-in-out 2 both; }
+@keyframes gacha-shine {
+  from { left: -60%; opacity: 1; }
+  to { left: 130%; opacity: 1; }
+}
+#gacha-rarity { font-size: var(--font-size-lg); font-weight: 900; letter-spacing: 0.04em; }
+/* SR：金色に光る */
+.gacha-result[data-grade="R"] { background: linear-gradient(135deg, #ffffff, #94a3b8, #e2e8f0); }
+.gacha-result[data-grade="SR"] {
+  background: linear-gradient(135deg, #fff7cc, var(--gacha-gold), #b45309);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.6);
+}
+.gacha-result[data-grade="SR"] .gacha-result-inner { background: radial-gradient(circle at 50% 30%, rgba(251, 191, 36, 0.25), var(--color-surface) 70%); }
+.gacha-result[data-grade="SR"] #gacha-rarity { color: var(--gacha-gold); text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+/* SSR：虹色にぐるぐる光る */
+.gacha-result[data-grade="SSR"] { background: transparent; box-shadow: 0 0 32px rgba(139, 92, 246, 0.7); }
+.gacha-result[data-grade="SSR"] .gacha-result-inner { background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.35), var(--color-surface) 70%); }
+.gacha-result[data-grade="SSR"]::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  z-index: -1;
+  background: conic-gradient(#ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+  animation: gacha-spin 3s linear infinite;
+}
+.gacha-result[data-grade="SSR"] canvas { filter: drop-shadow(0 0 10px #ffffff); }
+.gacha-result[data-grade="SSR"] #gacha-rarity {
+  background: var(--gacha-rainbow);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gacha-stamp 500ms 300ms cubic-bezier(0.2, 1.8, 0.4, 1) both, gacha-slide 2s linear infinite;
+}
+@keyframes gacha-spin { to { transform: rotate(1turn); } }
+@keyframes gacha-slide { to { background-position: 200% 0; } }
+
+/* レア度のバッジ（図鑑・人物カード） */
+.grade-badge {
+  display: inline-block;
+  min-width: 2.6em;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: 900;
+  font-size: var(--font-size-sm);
+  text-align: center;
+  color: #111827;
+  background: #d1d5db;
+}
+.grade-badge[data-grade="R"] { background: #93c5fd; }
+.grade-badge[data-grade="SR"] { background: var(--gacha-gold); box-shadow: 0 0 8px rgba(251, 191, 36, 0.7); }
+.grade-badge[data-grade="SSR"] { background: var(--gacha-rainbow); color: #ffffff; text-shadow: 0 0 2px #000; box-shadow: 0 0 8px rgba(139, 92, 246, 0.7); }
+.walk-card-rarity[data-grade="SSR"] { background: var(--gacha-rainbow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha-result.is-shown canvas,
+  .gacha-result.is-shown #gacha-rarity,
+  .gacha-result.is-shown::after,
+  .gacha-result[data-grade="SSR"]::before,
+  .gacha-tap { animation: none; }
+}
+
+/* イベントのブースト中 */
+.walk-event {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--walk-rare);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+/* 好みを聞く画面 */
+.walk-prefs { margin-bottom: var(--space-4); }
+.walk-prefs .check { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+
+/* ---------- 記念撮影 ---------- */
+.selfie-frame { position: relative; }
+.selfie-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 56dvh;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted, #111827);
+  touch-action: none;
+  cursor: grab;
+}
+.selfie-flash { position: absolute; inset: 0; border-radius: var(--radius-md); background: #ffffff; opacity: 0; pointer-events: none; }
+.selfie-flash.is-on { animation: selfie-flash 400ms ease-out; }
+@keyframes selfie-flash { from { opacity: 0.95; } to { opacity: 0; } }
+.selfie-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; }
+.selfie-tools .walk-demo-note { flex: 1 1 100%; margin: 0; }
+.selfie-shoot { width: 100%; margin-top: var(--space-2); font-size: var(--font-size-md); font-weight: 700; }
+.selfie-photo { display: block; width: 100%; border-radius: var(--radius-md); }
+@media (prefers-reduced-motion: reduce) { .selfie-flash.is-on { animation: none; } }
+
+/* ---------- 佐賀のえびす像（一覧） ---------- */
+.catalog { margin-top: var(--space-4); }
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+.catalog-grid li { display: grid; justify-items: center; gap: var(--space-1); text-align: center; font-size: var(--font-size-xs); }
+.catalog-grid img, .catalog-noimg {
+  width: 96px; height: 96px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted, #1f2937);
+}
+.catalog-noimg { display: grid; place-items: center; color: var(--color-on-surface-muted); }
+/* まだ集めていない像は、ぼかして暗くする（どんな像かは、なんとなく分かる） */
+.catalog-grid img.is-silhouette { filter: blur(5px) grayscale(1) brightness(0.45); }
+.catalog-grid a { color: var(--color-primary); }
+.gacha-photo { width: 160px; height: 160px; object-fit: cover; border-radius: var(--radius-md); }
+
+/* ---------- 七賢人が仲間になった ---------- */
+.join-dialog { text-align: center; }
+.join-dialog canvas { width: 128px; height: 160px; animation: gacha-pop 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.join-grade { margin: var(--space-1) 0 0; font-weight: 900; font-size: var(--font-size-lg); color: var(--color-warning); }
+.join-grade[data-grade="SR"] { color: var(--gacha-gold); text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+.join-grade[data-grade="SSR"] { background: var(--gacha-rainbow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@media (prefers-reduced-motion: reduce) { .join-dialog canvas { animation: none; } }
+
+/* ---------- えびす像の場所に着いた ---------- */
+.arrive-dialog { text-align: center; }
+.arrive-ref { display: block; margin: var(--space-2) auto; width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md); }
+.arrive-shoot { display: block; width: 100%; margin: var(--space-2) 0; font-size: var(--font-size-md); font-weight: 700; cursor: pointer; }
+.arrive-shoot:focus-within { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

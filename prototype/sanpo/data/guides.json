@@ -1,0 +1,56 @@
+{
+  "_note": "デモ用の架空の案内人。実在の人ではない。案内人の QR は walk?guide=<id>.<code> を開く URL。code はデモ用の合言葉で、ブラウザで照合するだけ。QR を読むと、参加者が最初に選んだ好み（quests.js の PREFS）に合わせて、クエストを1つその場で作る。likes はこの案内人が出しやすい種類、home は話の中心になるえびす像、lines は種類ごとの口ぐせ（{target} {sage} {meters} {min} は作るときに置き換える）。種類：visit（行く）／tour（順に回る）／timed（時間内に着く）／escort（七賢人を連れて行く）／walk（決まった距離を歩く）／answer（着いたら像を見て答える。問題は planning/data/ebisu-demo.json の history.quiz）",
+  "guides": [
+    {
+      "id": "yanagimachi",
+      "code": "tai-1822",
+      "name": "柳町のおばあちゃん（架空）",
+      "talk": "このへんは長崎街道の通り道でね、商人さんが多かったけん、恵比寿さんがあちこちにおらすとよ。",
+      "gift": "naomasa",
+      "home": "houtomi",
+      "likes": ["tour", "escort", "visit"],
+      "lines": {
+        "visit": "{target}にも会うてきんしゃい。よか顔しとらすけん。",
+        "tour": "せっかくなら、順番にお参りしてきんしゃい。",
+        "escort": "殿さまにも、街道の恵比寿さんば見せてあげて。",
+        "walk": "ちょっと足ば伸ばしてきんしゃい。",
+        "timed": "急がんでもよかばってん、早う行けたらえらかね。",
+        "answer": "{target}は、よう見たら面白かとよ。"
+      }
+    },
+    {
+      "id": "zaimoku",
+      "code": "kaido-1755",
+      "name": "材木町のおじいちゃん（架空）",
+      "talk": "八坂さんの恵比寿さんは、この辺りでいちばん古かほうたい。街道ば歩く人ば、ずっと見てきたとよ。",
+      "gift": "sano",
+      "home": "yasaka",
+      "likes": ["walk", "timed", "visit"],
+      "lines": {
+        "visit": "{target}にお参りしてきんしゃい。",
+        "tour": "街道の恵比寿さんば、順に回ってみらんね。",
+        "escort": "{sage}さんば連れて、{target}まで行ってみんね。",
+        "walk": "歩くのがいちばんの健康法たい。",
+        "timed": "若かもんなら、{min}分で行けるやろ。",
+        "answer": "{target}のこと、ちゃんと見てきたら分かるばい。"
+      }
+    },
+    {
+      "id": "houtomi",
+      "code": "tsuri-2015",
+      "name": "歴史民俗館のお姉さん（架空）",
+      "talk": "佐賀の恵比寿さんは800体を超えて、今も増えよるとですよ。新しか恵比寿さんにも、ちゃんと見どころのあるとです。",
+      "gift": "okuma",
+      "home": "mojitai",
+      "likes": ["answer", "tour", "escort"],
+      "lines": {
+        "visit": "{target}の由来、現地の案内板も読んでみてください。",
+        "tour": "建った年の順に見比べると、街の移り変わりが分かりますよ。",
+        "escort": "{sage}と一緒に{target}へ行ったら、話が弾みそうですね。",
+        "walk": "街道は歩いてこそ分かることが多かとです。",
+        "timed": "{min}分でどこまで行けるか、挑戦してみてください。",
+        "answer": "{target}の前で、ひとつ問題を出しますね。よく見て答えてください。"
+      }
+    }
+  ]
+}

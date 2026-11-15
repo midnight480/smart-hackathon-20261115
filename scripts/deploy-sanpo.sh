@@ -17,12 +17,12 @@ location=$(curl -s -o /dev/null -w '%{redirect_url}' "$URL")
 
 case "$location" in
   *cloudflareaccess.com*)
-    echo "OK: Access が掛かっています（ログインなしは $code でログイン画面へ）"
+    echo "OK: Access が掛かっています（ログインなしは ${code} でログイン画面へ）"
     ;;
   *)
     echo ""
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    echo "!! Access が外れています（ログインなしで $code）。誰でも見られる状態です"
+    echo "!! Access が外れています（ログインなしで ${code}）。誰でも見られる状態です"
     echo "!! ダッシュボードの Workers & Pages → ebisu-sanpo → Access で掛け直してください"
     echo "!! 手順: docs/cloudflare/README.md の「Cloudflare Access でチームだけに絞る」"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
