@@ -2,6 +2,8 @@
 // 記録はこの端末のブラウザ（localStorage）にだけ保存する。書き換えられるので、本番では Worker + D1 に置く。
 // localStorage が使えない環境（プライベートモードなど）でも動くよう、読み書きの失敗は無視してメモリに持つ。
 
+import { pointsMultiplier, currentEvent } from './events.js';
+
 const KEY = 'ebisu-walk-progress-v1';
 
 // ポイントの配り方
@@ -27,6 +29,7 @@ const empty = () => ({
   guides: {}, // { yanagimachi: 日時 }
   quests: {}, // { 'q-mojitai': { status: 'active' | 'done', at } }
   walkM: 0, // これまでに歩いた距離（m）
+  gacha: { draws: 0, spentYen: 0 }, // ガチャを回した回数と、払った金額（デモ）
   laps: {}, // 弾ごとの周回 { ch1: { lap: 1, got: { houtomi: 日時 }, start: 日時, clears: [{ lap, ms, at }] } }
   party: [], // パーティーにいる七賢人の ID（新しい順、最大 PARTY_MAX 人）
   balance: 0, // 使えるポイント
@@ -49,10 +52,14 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* 保存できなくても続ける */ }
 }
 
-function addPoints(points, text) {
-  data.balance += points;
-  data.total += points;
-  log(text, points);
+// 歩いたり話したりして貯まるポイント。イベント期間中は倍になる（boost: false なら倍にしない）。足した分を返す
+function addPoints(points, text, { boost = true } = {}) {
+  const m = boost ? pointsMultiplier() : 1;
+  const got = points * m;
+  data.balance += got;
+  data.total += got;
+  log(m > 1 ? `${text}（${currentEvent().name} ${m}倍）` : text, got);
+  return got;
 }
 
 function log(text, points) {
@@ -142,6 +149,26 @@ export function lapArrive(chapter, statueId) {
   l.walkM = 0;
   save();
   return result;
+}
+
+// ---------- ガチャ（デモ決済） ----------
+
+export const gachaInfo = () => { data.gacha ??= { draws: 0, spentYen: 0 }; return data.gacha; };
+
+// 払った金額と同じだけ、お店で使えるポイントを足す。
+// 累積（段位・ランキング）には入れない。お金で順位が上がらないようにする
+export function buyGacha(yen) {
+  const g = gachaInfo();
+  g.draws += 1;
+  g.spentYen += yen;
+  data.balance += yen;
+  log(`ガチャ ${g.draws}回目（¥${yen} デモ決済。累積には入らない）`, yen);
+  save();
+}
+
+export function bonus(points, text) {
+  addPoints(points, text);
+  save();
 }
 
 export const get = () => data;

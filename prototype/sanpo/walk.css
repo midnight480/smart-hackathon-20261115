@@ -259,3 +259,35 @@ body { background: var(--color-surface); overflow: hidden; }
   color: var(--color-on-surface);
   border-color: var(--color-border);
 }
+
+/* ---------- ガチャ ---------- */
+#gacha-pay { width: 100%; margin: var(--space-2) 0 var(--space-3); }
+.gacha-result {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-3);
+  border: 1px solid var(--walk-rare);
+  border-radius: var(--radius-md);
+}
+.gacha-result p { margin: var(--space-1) 0 0; }
+.gacha-result canvas { width: 96px; height: 120px; }
+.gacha-result.is-shown canvas { animation: gacha-pop var(--duration-base, 200ms) var(--easing, ease-out) both; animation-duration: 600ms; }
+@keyframes gacha-pop {
+  from { transform: scale(0.3) rotateY(180deg); opacity: 0; }
+  to { transform: scale(1) rotateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gacha-result.is-shown canvas { animation: none; }
+}
+
+/* イベントのブースト中 */
+.walk-event {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--walk-rare);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}

@@ -3,6 +3,7 @@
 // 問題にゆかりのある七賢人がパーティーにいれば、1回の勝負につき1度だけヒント（間違いを2つ消す）をもらえる。
 
 import * as progress from './progress.js';
+import { pointsMultiplier } from './events.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -118,7 +119,7 @@ function toResult(quit) {
   let text;
   if (won) {
     progress.winChallenge(challengeId(guide), `${guide.name}との知恵くらべ`, win);
-    text = `${game.correct}問正解で勝ち！ +${win}pt。${guide.name}「よう知っとるねえ。たいしたもんたい」`;
+    text = `${game.correct}問正解で勝ち！ +${win * pointsMultiplier()}pt。${guide.name}「よう知っとるねえ。たいしたもんたい」`;
   } else {
     const taken = progress.takePoints(lose, `${guide.name}との知恵くらべに負けた`);
     text = `${quit ? '途中でやめたので負け。' : `${game.correct}問正解で負け。`}`

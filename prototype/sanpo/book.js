@@ -2,6 +2,7 @@
 // 記録の読み書きは progress.js に任せ、ここは見せ方だけを受け持つ。
 
 import * as progress from './progress.js';
+import { pointsMultiplier } from './events.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -93,7 +94,7 @@ export function showGuide(guide, giftText, challenge, onChallenge) {
   const q = guide.quest;
   $('guide-quest').hidden = !q;
   if (q) {
-    $('guide-quest-title').textContent = `${q.title}（${q.points}pt）`;
+    $('guide-quest-title').textContent = `${q.title}（${q.points * pointsMultiplier()}pt）`;
     $('guide-quest-body').textContent = q.body;
   }
   const canChallenge = challenge && !challenge.won;
@@ -102,7 +103,7 @@ export function showGuide(guide, giftText, challenge, onChallenge) {
   if (canChallenge) {
     const { count, need, win, lose } = challenge.rule;
     $('guide-challenge-body').textContent =
-      `「佐賀のこと、どれだけ知っとるね？」${count}問のうち${need}問当てたら勝ちで +${win}pt。`
+      `「佐賀のこと、どれだけ知っとるね？」${count}問のうち${need}問当てたら勝ちで +${win * pointsMultiplier()}pt。`
       + `負けたら使えるポイントから −${lose}pt（累積は減らない）。パーティーの七賢人がヒントをくれることもある。`;
   }
   const dialog = $('guide-dialog');
@@ -222,7 +223,7 @@ export function formatMs(ms) {
 }
 
 // 図鑑の絵：集めたものは板の表、まだのものは影絵
-function drawThumb(c, board, has) {
+export function drawThumb(c, board, has) {
   const g = c.getContext('2d');
   const src = has ? board.face : board.edge;
   const s = Math.min(c.width / board.w, c.height / board.h);

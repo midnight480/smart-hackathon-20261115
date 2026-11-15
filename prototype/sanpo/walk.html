@@ -20,12 +20,14 @@
       <button type="button" class="btn btn-primary btn-sm" id="btn-camera">カメラで見る</button>
       <button type="button" class="btn btn-secondary btn-sm" id="btn-restart">近くから歩かせる</button>
       <button type="button" class="btn btn-secondary btn-sm" id="btn-book">図鑑・ランキング</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-gacha">ガチャ</button>
     </div>
 
     <p class="walk-status" id="walk-status" aria-live="polite"></p>
 
     <!-- ポイントと、受けているクエスト -->
     <div class="walk-hud" id="walk-hud">
+      <p class="walk-event" id="hud-event" hidden></p>
       <p class="walk-points"><span id="hud-rank"></span>　<strong id="hud-balance">0</strong> pt（累積 <span id="hud-total">0</span>）</p>
       <p class="walk-quest" id="hud-quest" hidden></p>
       <p class="walk-party" id="hud-party" hidden></p>
@@ -70,6 +72,28 @@
         <button value="ok" class="btn btn-primary" autofocus>行ってみる</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- えびすガチャ（デモ決済） -->
+  <dialog class="modal walk-dialog" id="gacha-dialog" aria-labelledby="gacha-title">
+    <h2 class="modal-title" id="gacha-title">えびすガチャ</h2>
+    <p class="walk-demo-note">デモ決済です。実際の支払いは発生しません。</p>
+    <p>図鑑がなかなかそろわない人に。払った金額と同じだけ、お店で使えるポイントが付いて、ガチャを1回引けます。買ったポイントは累積（段位・ランキング）には入りません。</p>
+    <p class="walk-quiz-q" id="gacha-price"></p>
+    <p class="walk-demo-note" id="gacha-price-note"></p>
+    <button type="button" class="btn btn-primary" id="gacha-pay"></button>
+    <div class="gacha-result" id="gacha-result" role="status" hidden>
+      <canvas id="gacha-canvas" width="192" height="240" aria-hidden="true"></canvas>
+      <p class="walk-dialog-kicker" id="gacha-rarity"></p>
+      <p class="walk-quiz-q" id="gacha-name"></p>
+      <p id="gacha-new"></p>
+    </div>
+    <p class="walk-dialog-kicker" id="gacha-event" hidden></p>
+    <p class="walk-demo-note" id="gacha-odds"></p>
+    <p class="walk-demo-note" id="gacha-history"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="gacha-close">閉じる</button>
+    </div>
   </dialog>
 
   <!-- 周回のコンプリート -->

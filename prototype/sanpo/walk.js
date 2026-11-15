@@ -11,6 +11,11 @@
 import * as progress from './progress.js';
 import { initBook, updateHud, toast, showGuide, questOf, showLapClear } from './book.js';
 import { initQuiz, startQuiz, rule as quizRule, challengeId } from './quiz.js';
+import { initGacha } from './gacha.js';
+import { initEvents, currentEvent, pointsMultiplier } from './events.js';
+
+// 表示用：イベントの倍率をかけたポイント
+const boosted = (n) => n * pointsMultiplier();
 
 const ROUTE_URL = './data/walk-route.json';
 const EBISU_URL = '../../planning/data/ebisu-demo.json';
@@ -18,6 +23,7 @@ const GUIDES_URL = './data/guides.json';
 const RANKING_URL = './data/ranking-demo.json';
 const QUIZ_URL = './data/quiz.json';
 const CHAPTERS_URL = './data/chapters.json';
+const EVENTS_URL = './data/events.json';
 // 1回の位置の更新でこれより大きく動いたら、GPS の飛びとみなして歩いた距離に数えない（m）
 const WALK_JUMP_M = 500;
 // 同じクエストに挑戦中のほかの参加者（デモでは架空）が、地図の上を歩く速さ（m/秒）
@@ -612,6 +618,12 @@ function updateStatus() {
   checkArrivals();
   updateHud();
   const party = progress.get().party.map((id) => state.sages.find((s) => s.id === id)?.name).filter(Boolean);
+  const ev = currentEvent();
+  $('hud-event').hidden = !ev;
+  if (ev) {
+    $('hud-event').textContent = `${ev.name}ブースト中：ポイント${ev.pointsMultiplier}倍`
+      + (ev.rareMultiplier > 1 ? `・ガチャのレア${ev.rareMultiplier}倍` : '') + `（${ev.end.slice(5).replace('-', '/')}まで）`;
+  }
   const others = othersOnQuest();
   $('hud-others').hidden = !others.length;
   $('hud-others').textContent = `同じクエストに挑戦中：${others.length}人（地図の緑の点）`;
@@ -624,7 +636,7 @@ function checkArrivals() {
   for (const st of state.statues) {
     if (distTo(st) > ARRIVE_M) continue;
     if (progress.collect(`ebisu:${st.id}`, st.name, progress.POINTS.ebisu)) {
-      toast(`${st.name}に着きました。図鑑に登録（+${progress.POINTS.ebisu}pt）`);
+      toast(`${st.name}に着きました。図鑑に登録（+${boosted(progress.POINTS.ebisu)}pt）`);
     }
     // 開いている弾の周回を進める
     state.chapters.forEach((ch, i) => {
@@ -637,7 +649,7 @@ function checkArrivals() {
     const q = questOf(id)?.quest;
     const d = q && questDistance(q);
     if (d != null && d <= ARRIVE_M && progress.completeQuest(q)) {
-      toast(`クエスト「${q.title}」を達成（+${q.points}pt）`);
+      toast(`クエスト「${q.title}」を達成（+${boosted(q.points)}pt）`);
     }
   }
 }
@@ -653,7 +665,7 @@ function meetSage(sage) {
   const first = progress.collect(`sage:${sage.id}`, sage.name, pts);
   joinParty(sage);
   toast(first
-    ? `${sage.name}に出会いました。図鑑に登録（+${pts}pt）。パーティーに加わりました`
+    ? `${sage.name}に出会いました。図鑑に登録（+${boosted(pts)}pt）。パーティーに加わりました`
     : `${sage.name}がパーティーに加わりました`);
 }
 
@@ -752,7 +764,7 @@ function handleGuide(guide) {
       ? `お礼に「${sage.name}」のカードをもらいました。図鑑に登録し、パーティーに加わりました。`
       : `「${sage.name}」がパーティーに加わりました。`;
   }
-  gift += `（話を聞いて +${progress.POINTS.guide}pt）`;
+  gift += `（話を聞いて +${boosted(progress.POINTS.guide)}pt）`;
   showGuide(guide, gift, { rule: quizRule(), won: progress.challengeWon(challengeId(guide)) }, () => startQuiz(guide));
   updateHud();
 }
@@ -949,8 +961,8 @@ function loadImage(url) {
 }
 
 async function main() {
-  const [route, chars, ebisuData, guides, ranking, quiz, chapters] = await Promise.all(
-    [ROUTE_URL, CHARACTERS_URL, EBISU_URL, GUIDES_URL, RANKING_URL, QUIZ_URL, CHAPTERS_URL].map((u) => fetch(u).then((r) => r.json())),
+  const [route, chars, ebisuData, guides, ranking, quiz, chapters, eventsData] = await Promise.all(
+    [ROUTE_URL, CHARACTERS_URL, EBISU_URL, GUIDES_URL, RANKING_URL, QUIZ_URL, CHAPTERS_URL, EVENTS_URL].map((u) => fetch(u).then((r) => r.json())),
   );
   // 写真を読み込む（読めなかったものは絵で代わりに出す）
   const [ebisuImg, ...sageImgs] = await Promise.all(
@@ -976,6 +988,7 @@ async function main() {
   state.sages = chars.sages;
   state.statues = ebisuData.ebisu.map((e) => ({ id: e.id, name: e.name, area: e.area, builtYear: e.builtYear, ...toLocal(e.lat, e.lng) }));
   state.guides = guides.guides;
+  initEvents(eventsData);
   state.chapters = chapters.chapters;
   state.others = ranking.players.filter((p) => p.quest).map((p) => ({
     name: p.name, quest: p.quest, s: Math.min(p.s, state.total), dir: Math.random() < 0.5 ? 1 : -1, marker: null,
@@ -1007,8 +1020,7 @@ async function main() {
 
   setupMap(coords);
   setupInput();
-  initBook({
-    entries: [
+  const bookEntries = [
       ...state.statues.map((st) => ({
         key: `ebisu:${st.id}`, name: st.name, sub: `${st.builtYear}年・${st.area.split('（')[0]}`,
         hint: 'その場所まで行くと集まる', board: ebisuBoard,
@@ -1018,7 +1030,9 @@ async function main() {
         hint: state.guides.some((g) => g.gift === s.id) ? '歩いて出会うか、案内人からもらう' : '歩いていると出会える',
         board: s.board,
       })),
-    ],
+  ];
+  initBook({
+    entries: bookEntries,
     chapters: state.chapters,
     ranking: ranking.players,
     guides: state.guides,
@@ -1026,6 +1040,7 @@ async function main() {
     onDemoGuide: handleGuide,
   });
   initQuiz({ quiz, sages: state.sages, onEnd: () => updateHud() });
+  initGacha({ entries: bookEntries });
 
   // 前回までのパーティーを、自分の後ろに並べる。進む向きは、最初に見ているえびすさんの方
   state.walkHeading = bearing(state.user, pointAt(state.ebisu.s));
