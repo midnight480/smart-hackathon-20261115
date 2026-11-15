@@ -28,6 +28,8 @@
     <div class="walk-hud" id="walk-hud">
       <p class="walk-points"><span id="hud-rank"></span>　<strong id="hud-balance">0</strong> pt（累積 <span id="hud-total">0</span>）</p>
       <p class="walk-quest" id="hud-quest" hidden></p>
+      <p class="walk-party" id="hud-party" hidden></p>
+      <p class="walk-party" id="hud-others" hidden></p>
     </div>
 
     <div class="toast walk-toast" id="walk-toast" role="status" hidden></div>
@@ -59,10 +61,47 @@
         <h3 id="guide-quest-title" class="card-title"></h3>
         <p id="guide-quest-body"></p>
       </div>
+      <div class="walk-quest-card" id="guide-challenge">
+        <p class="walk-dialog-kicker">知恵くらべを申し込まれました</p>
+        <p id="guide-challenge-body"></p>
+      </div>
       <div class="modal-actions">
+        <button value="quiz" class="btn btn-secondary" id="guide-quiz-btn">知恵くらべを受ける</button>
         <button value="ok" class="btn btn-primary" autofocus>行ってみる</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- 周回のコンプリート -->
+  <dialog class="modal walk-dialog" id="lap-dialog" aria-labelledby="lap-title">
+    <form method="dialog">
+      <p class="walk-dialog-kicker">周回コンプリート</p>
+      <h2 class="modal-title" id="lap-title"></h2>
+      <p id="lap-time" class="walk-quiz-q"></p>
+      <p id="lap-points"></p>
+      <p id="lap-next"></p>
+      <div class="walk-quest-card">
+        <p class="walk-dialog-kicker">SAGATOCO との連携（構想）</p>
+        <p>本番では、周回の完走を佐賀県公式ウォーキングアプリ「SAGATOCO」のイベントのチェックイン（QR / GPS）として登録し、応援店で使える SAGATOCO のポイントにすることを考えています。県との調整が前提で、このデモでは SAGATOCO にはつながっていません。</p>
+        <p><a href="https://saga.karada.live/" target="_blank" rel="noopener">SAGATOCO の公式サイト</a></p>
+      </div>
+      <div class="modal-actions">
+        <button value="ok" class="btn btn-primary" autofocus>次の周回へ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 案内人との知恵くらべ（佐賀クイズ） -->
+  <dialog class="modal walk-dialog" id="quiz-dialog" aria-labelledby="quiz-title">
+    <p class="walk-dialog-kicker" id="quiz-count"></p>
+    <h2 class="modal-title" id="quiz-title"></h2>
+    <p id="quiz-question" class="walk-quiz-q"></p>
+    <div class="walk-quiz-choices" id="quiz-choices" role="group" aria-labelledby="quiz-question"></div>
+    <button type="button" class="btn btn-ghost btn-sm" id="quiz-hint" hidden></button>
+    <p id="quiz-feedback" role="status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="quiz-next" hidden>次へ</button>
+    </div>
   </dialog>
 
   <!-- 図鑑とランキング -->
@@ -86,7 +125,11 @@
         <button type="button" class="btn btn-sm" data-metric="collected" aria-pressed="true">集めた数</button>
         <button type="button" class="btn btn-sm" data-metric="points" aria-pressed="false">累積ポイント</button>
         <button type="button" class="btn btn-sm" data-metric="quests" aria-pressed="false">クエスト達成</button>
+        <button type="button" class="btn btn-sm" data-metric="bestSec" aria-pressed="false">最速コンプリート</button>
+        <button type="button" class="btn btn-sm" data-metric="laps" aria-pressed="false">周回数</button>
+        <button type="button" class="btn btn-sm" data-metric="walkM" aria-pressed="false">歩いた距離</button>
       </div>
+      <p class="walk-demo-note" id="ranking-note"></p>
       <ol class="ranking" id="ranking-list"></ol>
     </div>
 

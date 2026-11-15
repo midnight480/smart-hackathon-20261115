@@ -9,12 +9,25 @@
 // 写真がなければ、canvas で描いた絵で代わりに出す。
 
 import * as progress from './progress.js';
-import { initBook, updateHud, toast, showGuide, questOf } from './book.js';
+import { initBook, updateHud, toast, showGuide, questOf, showLapClear } from './book.js';
+import { initQuiz, startQuiz, rule as quizRule, challengeId } from './quiz.js';
 
 const ROUTE_URL = './data/walk-route.json';
 const EBISU_URL = '../../planning/data/ebisu-demo.json';
 const GUIDES_URL = './data/guides.json';
 const RANKING_URL = './data/ranking-demo.json';
+const QUIZ_URL = './data/quiz.json';
+const CHAPTERS_URL = './data/chapters.json';
+// 1回の位置の更新でこれより大きく動いたら、GPS の飛びとみなして歩いた距離に数えない（m）
+const WALK_JUMP_M = 500;
+// 同じクエストに挑戦中のほかの参加者（デモでは架空）が、地図の上を歩く速さ（m/秒）
+const OTHERS_SPEED = 0.7;
+// パーティー：先頭の仲間が自分の何 m 後ろを歩くか、仲間どうしの間隔、横のずれ（m）
+const PARTY_BACK_M = 2;
+const PARTY_GAP_M = 1.6;
+const PARTY_SIDE_M = 0.6;
+// 仲間が追いつく速さ（m/秒）
+const PARTY_SPEED = 1.6;
 // この距離（m）まで近づいたら、えびす像やクエストの目的地に「着いた」とみなす
 const ARRIVE_M = 30;
 const CHARACTERS_URL = './data/characters.json';
@@ -65,12 +78,15 @@ const state = {
   path: [], // [{ n, e, s }]：北・東（m）と、始点からの道のり（m）
   total: 0,
   user: { n: 0, e: 0 },
+  walkHeading: 90, // 自分の進む向き（北から時計回り）
   gps: false,
   ebisu: null, // いつも歩いているえびすさん
   walkers: [], // 道を歩くキャラクター。{ kind, s, dir, height, born, until, sage? }
   sages: [],
   nextSageAt: 0,
   statues: [], // 実在のえびす像 [{ id, name, n, e }]
+  chapters: [], // 図鑑の弾（エリア）
+  others: [], // 同じクエストに挑戦中のほかの参加者（デモでは架空）{ name, quest, s, dir, marker }
   guides: [],
   hits: [], // 押せる範囲（描いたときの外枠）
   labels: [], // 描いた名前の位置（重ならないようにずらすため）
@@ -136,6 +152,12 @@ function nearestS(q) {
   return best;
 }
 
+// キャラクターの位置。道を歩くものは道のりから、パーティーの仲間は自分の位置（pos）から
+function posOf(wk) {
+  if (wk.pos) return { ...wk.pos, heading: wk.heading ?? 0 };
+  return pointAt(wk.s);
+}
+
 const bearing = (from, to) => (deg(Math.atan2(to.e - from.e, to.n - from.n)) + 360) % 360;
 const distTo = (p) => Math.hypot(p.n - state.user.n, p.e - state.user.e);
 
@@ -186,7 +208,7 @@ function draw(time) {
   // 遠いものから描く（近いものが手前に重なる）
   state.hits = [];
   state.labels = [];
-  const sorted = [...state.walkers].sort((a, b) => distTo(pointAt(b.s)) - distTo(pointAt(a.s)));
+  const sorted = [...state.walkers].sort((a, b) => distTo(posOf(b)) - distTo(posOf(a)));
   for (const wk of sorted) drawWalker(wk, project, time, dpr);
 }
 
@@ -311,16 +333,17 @@ function opacity(wk) {
 }
 
 function drawWalker(wk, project, time, dpr) {
-  const p = pointAt(wk.s);
+  const p = posOf(wk);
   const feet = project(groundVec(p));
   if (!feet) return;
   // 進む向きの 1m 先が画面の右なら、右を向いて描く
-  const heading = wk.dir > 0 ? p.heading : (p.heading + 180) % 360;
+  const heading = wk.pos || wk.dir > 0 ? p.heading : (p.heading + 180) % 360;
   const ahead = project(groundVec({ n: p.n + Math.cos(rad(heading)), e: p.e + Math.sin(rad(heading)) }));
   const faceRight = ahead ? ahead[0] >= feet[0] : true;
 
   const k = (wk.height * feet[2]) / 100; // 絵は高さ 100 の単位で描く
-  const phase = (time / 1000) * Math.PI * 2 * 1.8 + wk.s; // 1秒に 1.8 歩。キャラごとに足並みをずらす
+  // 立ち止まっている仲間は弾まない
+  const phase = wk.pos && !wk.moving ? 0 : (time / 1000) * Math.PI * 2 * 1.8 + (wk.s ?? wk.offset ?? 0); // 1秒に 1.8 歩。キャラごとに足並みをずらす
 
   // 向きを変えるときは、板がくるっと回る（写真で flip しないものは回さない）
   const target = faceRight || (wk.image && !wk.flip) ? 1 : -1;
@@ -342,7 +365,7 @@ function drawWalker(wk, project, time, dpr) {
   state.hits.push({ wk, x0: feet[0] - half, x1: feet[0] + half, y0: top, y1: feet[1] });
 
   // 名前と距離
-  const label = wk.kind === 'ebisu'
+  const label = wk.kind === 'party' ? `仲間：${wk.sage.name}` : wk.kind === 'ebisu'
     ? `えびすさん ${Math.round(distTo(p))}m`
     : `【${wk.sage.rarity}】${wk.sage.name} ${Math.round(distTo(p))}m`;
   ctx.font = `${14 * dpr}px ${css('--font-family')}`;
@@ -527,7 +550,7 @@ function spawnSage(sage, near) {
 
 // 重み（weight）に合わせて、まだ出ていない七賢人を一人選ぶ
 function pickSage() {
-  const out = state.walkers.filter((w) => w.kind === 'sage').map((w) => w.sage.id);
+  const out = [...state.walkers.filter((w) => w.kind === 'sage').map((w) => w.sage.id), ...progress.get().party];
   const pool = state.sages.filter((s) => !out.includes(s.id));
   const total = pool.reduce((a, s) => a + s.weight, 0);
   let r = Math.random() * total;
@@ -541,12 +564,15 @@ function tick(time) {
   const t = nowS();
 
   for (const wk of state.walkers) {
+    if (wk.pos) continue; // パーティーの仲間は updateParty で動かす
     wk.s += wk.dir * WALK_SPEED * dt;
     // 端まで行ったら折り返す
     if (wk.s >= state.total) { wk.s = state.total; wk.dir = -1; }
     if (wk.s <= 0) { wk.s = 0; wk.dir = 1; }
   }
   state.walkers = state.walkers.filter((wk) => !wk.until || wk.until > t);
+  updateParty(dt);
+  updateOthers(dt);
 
   // ときどき七賢人が現れる
   if (t >= state.nextSageAt && state.sages.length) {
@@ -579,12 +605,18 @@ function updateStatus() {
   const look = state.orientLive ? 'スマホの向きに連動中' : (state.follow ? 'えびすさんを追いかけて表示中' : 'ドラッグで見回せます');
   const sages = state.walkers.filter((w) => w.kind === 'sage');
   const rare = sages.length
-    ? `／近くに${sages.map((w) => `${w.sage.name}（${dirName(bearing(state.user, pointAt(w.s)))}）`).join('、')}`
+    ? `／近くに${sages.map((w) => `${w.sage.name}（${dirName(bearing(state.user, posOf(w)))}）`).join('、')}`
     : '';
   $('walk-status').textContent =
     `${where}：えびすさんは${dirName(bearing(state.user, p))}に ${Math.round(distTo(p))}m／${look}${rare}`;
   checkArrivals();
   updateHud();
+  const party = progress.get().party.map((id) => state.sages.find((s) => s.id === id)?.name).filter(Boolean);
+  const others = othersOnQuest();
+  $('hud-others').hidden = !others.length;
+  $('hud-others').textContent = `同じクエストに挑戦中：${others.length}人（地図の緑の点）`;
+  $('hud-party').hidden = !party.length;
+  $('hud-party').textContent = `パーティー（後ろに付いてくる）：${party.join('、')}`;
 }
 
 // えびす像の近くに来たら図鑑へ。受けているクエストの目的地に着いたら達成
@@ -594,6 +626,12 @@ function checkArrivals() {
     if (progress.collect(`ebisu:${st.id}`, st.name, progress.POINTS.ebisu)) {
       toast(`${st.name}に着きました。図鑑に登録（+${progress.POINTS.ebisu}pt）`);
     }
+    // 開いている弾の周回を進める
+    state.chapters.forEach((ch, i) => {
+      if (!ch.statues.includes(st.id) || !progress.unlocked(state.chapters, i)) return;
+      const r = progress.lapArrive(ch, st.id);
+      if (r?.cleared) showLapClear(ch, r, state.chapters[i + 1]);
+    });
   }
   for (const id of progress.activeQuests()) {
     const q = questOf(id)?.quest;
@@ -612,8 +650,93 @@ function questDistance(quest) {
 // 七賢人に出会った（押した）
 function meetSage(sage) {
   const pts = sage.weight === 1 ? progress.POINTS.sageRare : progress.POINTS.sage;
-  if (progress.collect(`sage:${sage.id}`, sage.name, pts)) {
-    toast(`${sage.name}に出会いました。図鑑に登録（+${pts}pt）`);
+  const first = progress.collect(`sage:${sage.id}`, sage.name, pts);
+  joinParty(sage);
+  toast(first
+    ? `${sage.name}に出会いました。図鑑に登録（+${pts}pt）。パーティーに加わりました`
+    : `${sage.name}がパーティーに加わりました`);
+}
+
+// ---------- 同じクエストに挑戦中のほかの参加者（デモでは架空） ----------
+
+// 自分が受けているクエストと同じものに挑戦中の人だけを、地図の上に出す
+function updateOthers(dt) {
+  const active = progress.activeQuests();
+  for (const o of state.others) {
+    o.s += o.dir * OTHERS_SPEED * dt;
+    if (o.s >= state.total) { o.s = state.total; o.dir = -1; }
+    if (o.s <= 0) { o.s = 0; o.dir = 1; }
+    const show = active.includes(o.quest);
+    if (show && !o.marker && state.map) {
+      o.marker = L.circleMarker(toLatLng(pointAt(o.s)), {
+        radius: 5, color: '#ffffff', weight: 2, fillColor: css('--walk-other'), fillOpacity: 1,
+      }).bindTooltip(o.name, { permanent: true, direction: 'top', className: 'walk-other-tip', offset: [0, -4] })
+        .addTo(state.map);
+    }
+    if (!show && o.marker) { o.marker.remove(); o.marker = null; }
+    o.marker?.setLatLng(toLatLng(pointAt(o.s)));
+  }
+}
+
+function othersOnQuest() {
+  const active = progress.activeQuests();
+  return state.others.filter((o) => active.includes(o.quest));
+}
+
+// ---------- パーティー ----------
+
+// 七賢人を仲間にする。道を歩いていた本人がいれば、その場から付いてくる
+function joinParty(sage) {
+  const left = progress.joinParty(sage.id);
+  if (left) {
+    state.walkers = state.walkers.filter((w) => !(w.kind === 'party' && w.sage.id === left));
+    const name = state.sages.find((s) => s.id === left)?.name;
+    if (name) setTimeout(() => toast(`パーティーは${progress.PARTY_MAX}人まで。${name}が抜けました`), 2500);
+  }
+  if (state.walkers.some((w) => w.kind === 'party' && w.sage.id === sage.id)) return;
+  const onRoute = state.walkers.find((w) => w.kind === 'sage' && w.sage.id === sage.id);
+  if (onRoute) {
+    const p = pointAt(onRoute.s);
+    Object.assign(onRoute, { kind: 'party', pos: { n: p.n, e: p.e }, heading: p.heading, until: null, offset: onRoute.s });
+  } else {
+    state.walkers.push(partyWalker(sage, partyTarget(state.walkers.filter((w) => w.kind === 'party').length)));
+  }
+}
+
+function partyWalker(sage, pos) {
+  return {
+    kind: 'party', sage, height: PERSON_HEIGHT_M, image: sage.img, flip: sage.flip, board: sage.board,
+    pos: { ...pos }, heading: state.walkHeading, offset: Math.random() * 10, born: nowS(),
+  };
+}
+
+// i 番目の仲間が並ぶ場所：自分の進む向きの後ろに一列、左右に少しずらす
+function partyTarget(i) {
+  const back = rad(state.walkHeading + 180);
+  const side = rad(state.walkHeading + 90);
+  const d = PARTY_BACK_M + PARTY_GAP_M * i;
+  const s = (i % 2 ? -1 : 1) * PARTY_SIDE_M;
+  return {
+    n: state.user.n + Math.cos(back) * d + Math.cos(side) * s,
+    e: state.user.e + Math.sin(back) * d + Math.sin(side) * s,
+  };
+}
+
+function updateParty(dt) {
+  const order = progress.get().party;
+  for (const wk of state.walkers) {
+    if (wk.kind !== 'party') continue;
+    const target = partyTarget(Math.max(0, order.indexOf(wk.sage.id)));
+    const dn = target.n - wk.pos.n;
+    const de = target.e - wk.pos.e;
+    const d = Math.hypot(dn, de);
+    wk.moving = d > 0.1;
+    if (!wk.moving) continue;
+    // 離れているほど急いで追いかける
+    const step = Math.min(d, Math.max(PARTY_SPEED, d) * dt);
+    wk.pos.n += (dn / d) * step;
+    wk.pos.e += (de / d) * step;
+    wk.heading = (deg(Math.atan2(de, dn)) + 360) % 360;
   }
 }
 
@@ -624,12 +747,13 @@ function handleGuide(guide) {
   const sage = state.sages.find((s) => s.id === guide.gift);
   if (sage) {
     const got = progress.collect(`sage:${sage.id}`, sage.name, 0);
+    joinParty(sage);
     gift = got
-      ? `お礼に「${sage.name}」のカードをもらいました。図鑑に登録しました。`
-      : `「${sage.name}」のカードは、もう図鑑にあります。`;
+      ? `お礼に「${sage.name}」のカードをもらいました。図鑑に登録し、パーティーに加わりました。`
+      : `「${sage.name}」がパーティーに加わりました。`;
   }
   gift += `（話を聞いて +${progress.POINTS.guide}pt）`;
-  showGuide(guide, gift);
+  showGuide(guide, gift, { rule: quizRule(), won: progress.challengeWon(challengeId(guide)) }, () => startQuiz(guide));
   updateHud();
 }
 
@@ -655,11 +779,11 @@ function updateMarkers() {
   for (const wk of state.walkers) {
     if (!wk.marker) {
       const color = wk.kind === 'ebisu' ? css('--walk-robe') : css('--walk-rare');
-      wk.marker = L.circleMarker(toLatLng(pointAt(wk.s)), {
+      wk.marker = L.circleMarker(toLatLng(posOf(wk)), {
         radius: wk.kind === 'ebisu' ? 7 : 5, color: '#ffffff', weight: 2, fillColor: color, fillOpacity: 1,
       }).addTo(state.map);
     }
-    wk.marker.setLatLng(toLatLng(pointAt(wk.s)));
+    wk.marker.setLatLng(toLatLng(posOf(wk)));
   }
   for (const m of state.markersAlive ?? []) {
     if (!state.walkers.some((wk) => wk.marker === m)) m.remove();
@@ -676,6 +800,13 @@ function restart() {
 }
 
 function setUser(p) {
+  // 動いた向きを「進む向き」として覚える（パーティーはその後ろに並ぶ）
+  const moved = Math.hypot(p.n - state.user.n, p.e - state.user.e);
+  if (moved > 0.5) state.walkHeading = bearing(state.user, p);
+  // 歩いた距離。GPS が大きく飛んだとき（WALK_JUMP_M 超）は数えない
+  // 最初に立ち位置を決めたときは数えない
+  if (state.userReady && moved > 0.5 && moved <= WALK_JUMP_M) progress.addWalk(moved);
+  state.userReady = true;
   state.user = p;
   state.userMarker?.setLatLng(toLatLng(p));
 }
@@ -720,6 +851,7 @@ function setupInput() {
       const y = e.offsetY * dpr;
       const hit = [...state.hits].reverse().find((b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1);
       if (hit?.wk.kind === 'sage') { showCard(hit.wk.sage); meetSage(hit.wk.sage); }
+      if (hit?.wk.kind === 'party') showCard(hit.wk.sage);
     }
     drag = null;
   });
@@ -817,8 +949,8 @@ function loadImage(url) {
 }
 
 async function main() {
-  const [route, chars, ebisuData, guides, ranking] = await Promise.all(
-    [ROUTE_URL, CHARACTERS_URL, EBISU_URL, GUIDES_URL, RANKING_URL].map((u) => fetch(u).then((r) => r.json())),
+  const [route, chars, ebisuData, guides, ranking, quiz, chapters] = await Promise.all(
+    [ROUTE_URL, CHARACTERS_URL, EBISU_URL, GUIDES_URL, RANKING_URL, QUIZ_URL, CHAPTERS_URL].map((u) => fetch(u).then((r) => r.json())),
   );
   // 写真を読み込む（読めなかったものは絵で代わりに出す）
   const [ebisuImg, ...sageImgs] = await Promise.all(
@@ -844,6 +976,10 @@ async function main() {
   state.sages = chars.sages;
   state.statues = ebisuData.ebisu.map((e) => ({ id: e.id, name: e.name, area: e.area, builtYear: e.builtYear, ...toLocal(e.lat, e.lng) }));
   state.guides = guides.guides;
+  state.chapters = chapters.chapters;
+  state.others = ranking.players.filter((p) => p.quest).map((p) => ({
+    name: p.name, quest: p.quest, s: Math.min(p.s, state.total), dir: Math.random() < 0.5 ? 1 : -1, marker: null,
+  }));
 
   state.ebisu = {
     kind: 'ebisu', s: 0, dir: 1, height: STATUE_HEIGHT_M, image: ebisuImg, flip: chars.ebisu.flip, board: ebisuBoard,
@@ -859,7 +995,7 @@ async function main() {
   if (new URLSearchParams(location.search).get('sages') === 'all') {
     const near = nearestS(state.user).s;
     // 重ならないよう、道の上に 7m おきに並べる
-    state.sages.forEach((sage, i) => {
+    state.sages.filter((s) => !progress.get().party.includes(s.id)).forEach((sage, i) => {
       spawnSage(sage, near);
       state.walkers[state.walkers.length - 1].s = Math.min(state.total, near + 12 + i * 7);
     });
@@ -883,10 +1019,19 @@ async function main() {
         board: s.board,
       })),
     ],
+    chapters: state.chapters,
     ranking: ranking.players,
     guides: state.guides,
     questDistance,
     onDemoGuide: handleGuide,
+  });
+  initQuiz({ quiz, sages: state.sages, onEnd: () => updateHud() });
+
+  // 前回までのパーティーを、自分の後ろに並べる。進む向きは、最初に見ているえびすさんの方
+  state.walkHeading = bearing(state.user, pointAt(state.ebisu.s));
+  progress.get().party.forEach((id, i) => {
+    const sage = state.sages.find((s) => s.id === id);
+    if (sage) state.walkers.push(partyWalker(sage, partyTarget(i)));
   });
   guideFromUrl();
   $('btn-camera').addEventListener('click', startCamera);

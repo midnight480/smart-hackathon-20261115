@@ -1,10 +1,60 @@
 {
-  "_note": "デモ用の架空の参加者。ランキングに「あなた」と一緒に並べる。本番は Worker + D1 に全員の記録を集めて並べる",
+  "_note": "デモ用の架空の参加者。ランキングに「あなた」と一緒に並べる。bestSec は第1弾を最速でコンプリートした秒数（null はまだ）、laps は第1弾をコンプリートした回数、walkM は歩いた距離（m）。quest と s は、地図に「同じクエストに挑戦中」として出すためのもの（クエストの ID と、道のりの上の位置 m）。本番は Worker + D1 に全員の記録を集め、位置は本人が共有を選んだときだけ、大まかに出す",
   "players": [
-    { "name": "えびす好きのたろう", "collected": 7, "points": 420, "quests": 4 },
-    { "name": "さがの歩き人", "collected": 5, "points": 310, "quests": 3 },
-    { "name": "クリーク探検隊", "collected": 4, "points": 180, "quests": 2 },
-    { "name": "はじめての佐賀", "collected": 2, "points": 60, "quests": 1 },
-    { "name": "まちかど散歩", "collected": 1, "points": 20, "quests": 0 }
+    {
+      "name": "えびす好きのたろう",
+      "collected": 7,
+      "points": 420,
+      "quests": 4,
+      "bestSec": 512,
+      "laps": 5,
+      "quest": "q-mojitai",
+      "s": 120,
+      "walkM": 6400
+    },
+    {
+      "name": "さがの歩き人",
+      "collected": 5,
+      "points": 310,
+      "quests": 3,
+      "bestSec": 640,
+      "laps": 3,
+      "quest": "q-yasaka",
+      "s": 40,
+      "walkM": 3900
+    },
+    {
+      "name": "クリーク探検隊",
+      "collected": 4,
+      "points": 180,
+      "quests": 2,
+      "bestSec": 905,
+      "laps": 1,
+      "quest": "q-mojitai",
+      "s": 260,
+      "walkM": 2100
+    },
+    {
+      "name": "はじめての佐賀",
+      "collected": 2,
+      "points": 60,
+      "quests": 1,
+      "bestSec": null,
+      "laps": 0,
+      "quest": "q-mojitai",
+      "s": 330,
+      "walkM": 700
+    },
+    {
+      "name": "まちかど散歩",
+      "collected": 1,
+      "points": 20,
+      "quests": 0,
+      "bestSec": null,
+      "laps": 0,
+      "quest": null,
+      "s": 0,
+      "walkM": 300
+    }
   ]
 }
