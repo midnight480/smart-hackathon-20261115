@@ -198,8 +198,16 @@ export function collect(key, label, points) {
   data.collected[key] = new Date().toISOString();
   addPoints(points, `${label}を図鑑に登録`);
   save();
+  collectListeners.forEach((fn) => fn(key));
   return true;
 }
+
+// 図鑑に何か増えたときに呼ぶ（七賢人が仲間になる条件を確かめるため）
+const collectListeners = [];
+export const onCollect = (fn) => collectListeners.push(fn);
+
+// 集めたえびす像の数（歩いて着いた像と、ガチャで出た像）
+export const ebisuCount = () => Object.keys(data.collected).filter((k) => k.startsWith('ebisu:') || k.startsWith('cat:')).length;
 
 // 案内人から話を聞いた。初めてならポイントを足し、クエストを受ける
 // 案内人から話を聞く。make(guide) で、好みに合わせたクエストを1つ作って受ける。

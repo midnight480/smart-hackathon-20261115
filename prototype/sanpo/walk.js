@@ -9,7 +9,7 @@
 // 写真がなければ、canvas で描いた絵で代わりに出す。
 
 import * as progress from './progress.js';
-import { initBook, updateHud, toast, showGuide, showLapClear } from './book.js';
+import { initBook, updateHud, toast, showGuide, showLapClear, drawThumb } from './book.js';
 import { initQuests, makeQuest, openPrefs, prefsText, questText, TYPE_NAMES } from './quests.js';
 import { initQuiz, startQuiz, askOne, rule as quizRule, challengeId } from './quiz.js';
 import { initGacha } from './gacha.js';
@@ -632,10 +632,10 @@ function spawnSage(sage, near) {
   });
 }
 
-// レア度の出やすさ（spawn）に合わせて、まだ出ていない七賢人を一人選ぶ
+// 仲間になった七賢人のうち、パーティーにいない人を、レア度の出やすさ（spawn）に合わせて一人選ぶ（道で会うとパーティーに戻る）
 function pickSage() {
   const out = [...state.walkers.filter((w) => w.kind === 'sage').map((w) => w.sage.id), ...progress.get().party];
-  const pool = state.sages.filter((s) => !out.includes(s.id));
+  const pool = state.sages.filter((s) => !out.includes(s.id) && progress.has(`sage:${s.id}`));
   const w = (s) => gradeOf(s.grade).spawn;
   const total = pool.reduce((a, s) => a + w(s), 0);
   let r = Math.random() * total;
@@ -706,8 +706,11 @@ function updateStatus() {
   const others = othersOnQuest();
   $('hud-others').hidden = !others.length;
   $('hud-others').textContent = `同じ種類のクエストに挑戦中：${others.length}人（地図の緑の点）`;
-  $('hud-party').hidden = !party.length;
-  $('hud-party').textContent = `パーティー（後ろに付いてくる）：${party.join('、')}`;
+  const left = nextSageLeft();
+  const count = `えびす像 ${progress.ebisuCount()}体`
+    + (left == null ? '・七賢人そろった' : `・次の七賢人まであと${left}体`);
+  $('hud-party').hidden = false;
+  $('hud-party').textContent = party.length ? `パーティー：${party.join('、')}（${count}）` : count;
 }
 
 // えびす像の近くに来たら図鑑へ。受けているクエストの目的地に着いたら達成
@@ -783,14 +786,59 @@ function checkQuests() {
   }
 }
 
+// ---------- 七賢人が仲間になる条件 ----------
+
+// えびす像を SAGE_EVERY 体集めるごとに、七賢人が一人仲間になる。N → R → SR → SSR の順
+const SAGE_EVERY = 10;
+const GRADE_ORDER = ['N', 'R', 'SR', 'SSR'];
+const sageOrder = () => [...state.sages].sort((a, b) => GRADE_ORDER.indexOf(a.grade) - GRADE_ORDER.indexOf(b.grade));
+const sagesEarned = () => Math.min(state.sages.length, Math.floor(progress.ebisuCount() / SAGE_EVERY));
+
+// 集めた数に足りているのに、まだ仲間になっていない七賢人を仲間にする
+function checkSageUnlocks() {
+  const earned = sagesEarned();
+  const have = state.sages.filter((s) => progress.has(`sage:${s.id}`)).length;
+  if (have >= earned) return;
+  const next = sageOrder().filter((s) => !progress.has(`sage:${s.id}`)).slice(0, earned - have);
+  next.forEach((sage, i) => {
+    const pts = gradeOf(sage.grade).sagePoints;
+    progress.collect(`sage:${sage.id}`, sage.name, pts);
+    joinParty(sage);
+    showSageJoin(sage, pts, (have + i + 1) * SAGE_EVERY);
+  });
+  updateHud();
+}
+
+// 一度に何人も仲間になったら、順番に見せる
+const joinQueue = [];
+function showSageJoin(sage, pts, at) {
+  if ($('join-dialog').open) { joinQueue.push([sage, pts, at]); return; }
+  $('join-count').textContent = `えびす像を${at}体集めました`;
+  $('join-grade').textContent = `${sage.grade}（${gradeOf(sage.grade).name}）`;
+  $('join-grade').dataset.grade = sage.grade;
+  $('join-name').textContent = `${sage.name}が仲間になった！`;
+  $('join-bio').textContent = sage.bio;
+  $('join-points').textContent = `+${boosted(pts)}pt。パーティーに加わり、後ろに付いてきます`;
+  const c = $('join-canvas');
+  c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  drawThumb(c, sage.board, true);
+  $('join-dialog').showModal();
+  $('join-dialog').addEventListener('close', () => {
+    const next = joinQueue.shift();
+    if (next) setTimeout(() => showSageJoin(...next), 200);
+  }, { once: true });
+}
+
+// 次の七賢人まで、あと何体か（全員そろったら null）
+function nextSageLeft() {
+  if (sagesEarned() >= state.sages.length) return null;
+  return SAGE_EVERY - (progress.ebisuCount() % SAGE_EVERY);
+}
+
 // 七賢人に出会った（押した）
 function meetSage(sage) {
-  const pts = gradeOf(sage.grade).sagePoints;
-  const first = progress.collect(`sage:${sage.id}`, sage.name, pts);
   joinParty(sage);
-  toast(first
-    ? `${sage.name}に出会いました。図鑑に登録（+${boosted(pts)}pt）。パーティーに加わりました`
-    : `${sage.name}がパーティーに加わりました`);
+  toast(`${sage.name}がパーティーに戻りました`);
 }
 
 // ---------- 同じクエストに挑戦中のほかの参加者（デモでは架空） ----------
@@ -884,12 +932,12 @@ function handleGuide(guide) {
   const fit = quest ? `種類：${TYPE_NAMES[quest.type]}／あなたの好み（${prefsText()}）に合わせて作りました` : '';
   let gift = '';
   const sage = state.sages.find((s) => s.id === guide.gift);
-  if (sage) {
-    const got = progress.collect(`sage:${sage.id}`, sage.name, 0);
+  if (sage && progress.has(`sage:${sage.id}`)) {
     joinParty(sage);
-    gift = got
-      ? `お礼に「${sage.name}」のカードをもらいました。図鑑に登録し、パーティーに加わりました。`
-      : `「${sage.name}」がパーティーに加わりました。`;
+    gift = `「${sage.name}」がパーティーに加わりました。`;
+  } else {
+    const left = SAGE_EVERY - (progress.ebisuCount() % SAGE_EVERY);
+    gift = `えびす像をあと${left}体集めると、七賢人がもう一人仲間になるよ。`;
   }
   gift += `（話を聞いて +${boosted(progress.POINTS.guide)}pt）`;
   showGuide(guide, quest, fit, gift, { rule: quizRule(), won: progress.challengeWon(challengeId(guide)) }, () => startQuiz(guide));
@@ -1165,7 +1213,7 @@ async function main() {
       })),
       ...state.sages.map((s) => ({
         key: `sage:${s.id}`, name: s.name, sub: s.years, grade: s.grade,
-        hint: state.guides.some((g) => g.gift === s.id) ? '歩いて出会うか、案内人からもらう' : '歩いていると出会える',
+        hint: `えびす像を${(sageOrder().indexOf(s) + 1) * SAGE_EVERY}体集めると仲間になる`,
         board: s.board,
       })),
   ];
@@ -1183,7 +1231,10 @@ async function main() {
     onDemoGuide: handleGuide,
   });
   initQuiz({ quiz, sages: state.sages, onEnd: () => updateHud() });
-  initGacha({ entries: [...bookEntries, ...catalogEntries], credit: catalog.credit });
+  // ガチャで出るのはえびす像だけ（七賢人は、えびす像を集めると仲間になる）
+  initGacha({ entries: [...bookEntries.filter((e) => e.key.startsWith('ebisu:')), ...catalogEntries], credit: catalog.credit });
+  progress.onCollect((key) => { if (key.startsWith('ebisu:') || key.startsWith('cat:')) setTimeout(checkSageUnlocks, 600); });
+  checkSageUnlocks();
   initSelfie({ sages: state.sages, ebisuBoard });
   initQuests({ statues: state.statues, sages: state.sages, distTo: statueDist, arriveM: ARRIVE_M });
 

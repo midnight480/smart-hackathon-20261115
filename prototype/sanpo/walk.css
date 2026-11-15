@@ -450,3 +450,11 @@ body { background: var(--color-surface); overflow: hidden; }
 .catalog-grid img.is-silhouette { filter: blur(5px) grayscale(1) brightness(0.45); }
 .catalog-grid a { color: var(--color-primary); }
 .gacha-photo { width: 160px; height: 160px; object-fit: cover; border-radius: var(--radius-md); }
+
+/* ---------- 七賢人が仲間になった ---------- */
+.join-dialog { text-align: center; }
+.join-dialog canvas { width: 128px; height: 160px; animation: gacha-pop 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.join-grade { margin: var(--space-1) 0 0; font-weight: 900; font-size: var(--font-size-lg); color: var(--color-warning); }
+.join-grade[data-grade="SR"] { color: var(--gacha-gold); text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+.join-grade[data-grade="SSR"] { background: var(--gacha-rainbow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@media (prefers-reduced-motion: reduce) { .join-dialog canvas { animation: none; } }

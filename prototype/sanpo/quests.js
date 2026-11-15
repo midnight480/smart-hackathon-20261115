@@ -100,7 +100,7 @@ const CAN = {
   visit: () => targets().length > 0,
   tour: () => ctx.statues.length >= 2,
   timed: () => targets().length > 0,
-  escort: () => targets().length > 0 && ctx.sages.length > 0,
+  escort: () => targets().length > 0 && progress.get().party.length > 0, // 仲間がいないと出さない
   walk: () => true,
   answer: () => targets((s) => s.quiz).length > 0,
 };
@@ -162,7 +162,7 @@ export function makeQuest(guide) {
     }
     case 'escort': {
       target = pick(targets()).id;
-      const sage = party.includes(guide.gift) ? guide.gift : (party[0] ?? guide.gift);
+      const sage = party.includes(guide.gift) ? guide.gift : party[0];
       q.sage = sage;
       const sageName = ctx.sages.find((s) => s.id === sage)?.name ?? sage;
       Object.assign(q, { target, points: Math.round(70 * pace.scale), title: `${sageName}を${nameOf(target)}に案内する` });

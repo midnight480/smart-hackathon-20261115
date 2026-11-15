@@ -177,7 +177,7 @@ function renderZukan() {
     }
   });
 
-  section('佐賀七賢人（どのエリアにも現れる）');
+  section('佐賀七賢人（えびす像を10体集めるごとに一人仲間になる）');
   for (const e of ctx.entries.filter((x) => x.key.startsWith('sage:'))) {
     open++;
     if (addEntry(list, e)) got++;

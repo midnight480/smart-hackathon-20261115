@@ -76,6 +76,21 @@
     </form>
   </dialog>
 
+  <!-- えびす像を集めて、七賢人が仲間になった -->
+  <dialog class="modal walk-dialog join-dialog" id="join-dialog" aria-labelledby="join-name">
+    <form method="dialog">
+      <p class="walk-dialog-kicker" id="join-count"></p>
+      <canvas id="join-canvas" width="192" height="240" aria-hidden="true"></canvas>
+      <p class="join-grade" id="join-grade"></p>
+      <h2 class="modal-title" id="join-name"></h2>
+      <p id="join-bio"></p>
+      <p class="walk-demo-note" id="join-points"></p>
+      <div class="modal-actions">
+        <button value="ok" class="btn btn-primary" autofocus>一緒に歩く</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- パーティーの七賢人と記念撮影 -->
   <dialog class="modal walk-dialog selfie-dialog" id="selfie-dialog" aria-labelledby="selfie-title">
     <h2 class="modal-title" id="selfie-title">七賢人と記念撮影</h2>
