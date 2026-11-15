@@ -64,7 +64,7 @@ npx wrangler secret put OPENAI_API_KEY   # 本番
 - `wrangler dev` はデフォルトでローカルのシミュレーション。本番リソースに繋ぐなら `--remote`
 - Next.js を載せるなら OpenNext（`@opennextjs/cloudflare`）か vinext を使う
 
-## このリポジトリでの使い方（試作「えびす時空さんぽ」）
+## このリポジトリでの使い方（試作「さがもん！Go！」）
 
 ルートの `wrangler.jsonc` で、`dist/` を Workers の Static Assets として公開する。Worker のコードはない。
 

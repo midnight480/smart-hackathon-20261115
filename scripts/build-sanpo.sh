@@ -1,5 +1,5 @@
 #!/bin/sh
-# 試作「えびす時空さんぽ」を Cloudflare Workers（Static Assets）に載せるため、必要なファイルだけを dist/ に集める。
+# 試作「さがもん！Go！」を Cloudflare Workers（Static Assets）に載せるため、必要なファイルだけを dist/ に集める。
 # リポジトリ全体を公開しないよう、置く場所はここで列挙したものに限る。
 set -eu
 cd "$(dirname "$0")/.."

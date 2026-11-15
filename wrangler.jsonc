@@ -1,5 +1,5 @@
 {
-  // 試作「えびす時空さんぽ」（prototype/sanpo）を Workers の Static Assets で公開する設定。
+  // 試作「さがもん！Go！」（prototype/sanpo）を Workers の Static Assets で公開する設定。
   // 先に scripts/build-sanpo.sh で dist/ を作ってから wrangler を動かす。
   // 公開先は Cloudflare Access でチームだけに絞る（手順は docs/cloudflare/README.md）。
   "name": "ebisu-sanpo",

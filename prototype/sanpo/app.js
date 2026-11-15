@@ -1,4 +1,4 @@
-// えびす時空さんぽ（試作）
+// さがもん！Go！（試作）：地図 → 水害 → 星空の画面
 // 1. 地図で恵比寿さんまで歩く → 2. 着いたら、その場所の水害 → 3. そこから見えた空
 // 画面の切り替えは URL のハッシュで行う（#/ が地図、#/spot/<id> が恵比寿さんの前）。
 
@@ -269,7 +269,7 @@ function renderSpot(ebisu) {
   renderDepth(ebisu);
   $('water-story').textContent = ebisu.water.story;
   renderTimeline(ebisu);
-  document.title = `${ebisu.name}｜えびす時空さんぽ（試作）`;
+  document.title = `${ebisu.name}｜さがもん！Go！（試作）`;
 }
 
 // ---------- 画面の切り替え ----------
@@ -293,7 +293,7 @@ function route() {
     $('spot-title').focus({ preventScroll: true });
   } else {
     stopSky();
-    document.title = 'えびす時空さんぽ（試作）';
+    document.title = 'さがもん！Go！（試作）';
     state.map.invalidateSize();
     if (state.spotId) focusSpot(state.spotId);
   }
