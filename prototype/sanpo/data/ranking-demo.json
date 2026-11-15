@@ -1,0 +1,10 @@
+{
+  "_note": "デモ用の架空の参加者。ランキングに「あなた」と一緒に並べる。本番は Worker + D1 に全員の記録を集めて並べる",
+  "players": [
+    { "name": "えびす好きのたろう", "collected": 7, "points": 420, "quests": 4 },
+    { "name": "さがの歩き人", "collected": 5, "points": 310, "quests": 3 },
+    { "name": "クリーク探検隊", "collected": 4, "points": 180, "quests": 2 },
+    { "name": "はじめての佐賀", "collected": 2, "points": 60, "quests": 1 },
+    { "name": "まちかど散歩", "collected": 1, "points": 20, "quests": 0 }
+  ]
+}

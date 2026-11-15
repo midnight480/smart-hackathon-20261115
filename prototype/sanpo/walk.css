@@ -1,0 +1,224 @@
+/*
+ * えびすさんが歩く（試作）のスタイル。UI の色・余白・文字サイズは design/tokens.css のトークンを使う。
+ * --walk-* は UI ではなく絵の色（空・地面・道・えびすさん）なので、ここで定義する。
+ */
+:root {
+  --walk-sky: #1a2030;
+  --walk-ground: #2a2c30;
+  --walk-road: #f4d06f;
+  --walk-label: #f4f5f7;
+  --walk-shadow: #000000;
+  --walk-hat: #1f2328;
+  --walk-face: #f6d7b0;
+  --walk-robe: #c2410c;
+  --walk-robe-dark: #7c2d12;
+  --walk-hakama: #1e3a8a;
+  --walk-tai: #e11d48;
+  --walk-rod: #a16207;
+  --walk-rare: #fbbf24;
+  --walk-shadow-ground: rgba(0, 0, 0, 0.35);
+  --walk-hakama-gray: #4b5563;
+  --walk-collar: #f9fafb;
+  --walk-hair-gray: #9ca3af;
+  /* 板ポリゴン：表の縁取り（白）と、板の側面（ボール紙の色） */
+  --walk-board-face: #ffffff;
+  --walk-board-edge: #8b7355;
+}
+
+.walk-card {
+  position: absolute;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  right: max(var(--space-3), env(safe-area-inset-right));
+  top: calc(max(var(--space-3), env(safe-area-inset-top)) + 96px);
+  max-width: 420px;
+  margin-inline: auto;
+}
+.walk-card-rarity {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-warning);
+}
+.walk-card .card-body { margin-bottom: var(--space-3); }
+
+html, body { margin: 0; height: 100%; }
+body { background: var(--color-surface); overflow: hidden; }
+[hidden] { display: none !important; }
+
+.walk { position: fixed; inset: 0; }
+
+.walk-video,
+.walk-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.walk-video { object-fit: cover; }
+.walk-canvas { touch-action: none; }
+
+.walk-bar {
+  position: absolute;
+  top: max(var(--space-3), env(safe-area-inset-top));
+  left: max(var(--space-3), env(safe-area-inset-left));
+  right: max(var(--space-3), env(safe-area-inset-right));
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.walk-status {
+  position: absolute;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  right: max(var(--space-3), env(safe-area-inset-right));
+  top: calc(max(var(--space-3), env(safe-area-inset-top)) + 40px);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--walk-label);
+  text-shadow: 0 0 4px var(--walk-shadow), 0 0 2px var(--walk-shadow);
+}
+
+.walk-map-wrap {
+  position: absolute;
+  right: max(var(--space-3), env(safe-area-inset-right));
+  bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  width: min(40vw, 280px);
+}
+.walk-map {
+  height: min(40vw, 220px);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+.walk-map-note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--walk-label);
+  text-shadow: 0 0 4px var(--walk-shadow);
+}
+
+.walk-route {
+  stroke: var(--walk-road);
+  stroke-width: 4;
+  fill: none;
+}
+
+.walk-credit {
+  position: fixed;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  bottom: max(var(--space-1), env(safe-area-inset-bottom));
+  margin: 0;
+  max-width: 50vw;
+  font-size: var(--font-size-xs);
+  color: var(--walk-label);
+  text-shadow: 0 0 4px var(--walk-shadow);
+}
+.walk-credit a { color: inherit; }
+
+@media (max-width: 639px) {
+  .walk-map-wrap { width: 44vw; bottom: calc(max(var(--space-3), env(safe-area-inset-bottom)) + 28px); }
+  .walk-map { height: 36vw; }
+}
+
+/* ---------- ポイントとクエスト ---------- */
+
+.walk-hud {
+  position: absolute;
+  left: max(var(--space-3), env(safe-area-inset-left));
+  bottom: calc(max(var(--space-3), env(safe-area-inset-bottom)) + 28px);
+  max-width: min(52vw, 360px);
+  display: grid;
+  gap: var(--space-2);
+}
+.walk-points,
+.walk-quest {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+.walk-points strong { font-size: var(--font-size-lg); color: var(--walk-rare); }
+.walk-quest { border-color: var(--walk-rare); }
+
+.walk-toast {
+  position: absolute;
+  left: 50%;
+  top: calc(max(var(--space-3), env(safe-area-inset-top)) + 96px);
+  transform: translateX(-50%);
+  max-width: calc(100vw - 2 * var(--space-4));
+  z-index: 10;
+}
+
+/* ---------- ダイアログ（案内人・図鑑） ---------- */
+
+.walk-dialog {
+  width: min(92vw, 480px);
+  max-height: 86dvh;
+  overflow-y: auto;
+}
+.walk-dialog-kicker {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-warning);
+}
+.walk-talk {
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--color-border);
+}
+.walk-quest-card {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--walk-rare);
+  border-radius: var(--radius-md);
+}
+.walk-quest-card p:last-child { margin-bottom: 0; }
+.walk-demo-note { font-size: var(--font-size-xs); color: var(--color-on-surface-muted); }
+
+.zukan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+}
+.zukan li {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+.zukan canvas { width: 64px; height: 80px; }
+.zukan .is-missing { color: var(--color-on-surface-muted); }
+.zukan .zukan-rarity { color: var(--color-warning); font-weight: 700; }
+
+.walk-segment { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-3); }
+.walk-segment .btn {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border: 1px solid var(--color-border);
+}
+.walk-segment .btn[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
+.ranking { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
+.ranking li { padding: var(--space-1) 0; }
+.ranking li.is-me { font-weight: 700; color: var(--color-primary); }
+.ranking .ranking-value { float: right; font-variant-numeric: tabular-nums; }
+
+.points-log { margin: 0 0 var(--space-4); padding-left: var(--space-4); font-size: var(--font-size-sm); }
+.walk-demo-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+
+@media (max-width: 639px) {
+  .walk-hud { bottom: calc(max(var(--space-3), env(safe-area-inset-bottom)) + 36vw + 64px); max-width: calc(100vw - 2 * var(--space-3)); }
+}
+.walk-quest { white-space: pre-line; }

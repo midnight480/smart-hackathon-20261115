@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>えびすさんが歩く（試作）</title>
+  <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="../../design/tokens.css">
+  <link rel="stylesheet" href="../../design/components.css">
+  <link rel="stylesheet" href="./walk.css">
+</head>
+<body>
+  <!-- えびす像が道に沿って歩く姿を、カメラの映像に重ねる試し -->
+  <main class="walk" id="walk">
+    <video id="walk-video" class="walk-video" playsinline muted hidden></video>
+    <canvas id="walk-canvas" class="walk-canvas" role="img" aria-label="えびすさんが道を歩いている"></canvas>
+
+    <div class="walk-bar">
+      <a href="./" class="btn btn-secondary btn-sm">もどる</a>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-camera">カメラで見る</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-restart">近くから歩かせる</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-book">図鑑・ランキング</button>
+    </div>
+
+    <p class="walk-status" id="walk-status" aria-live="polite"></p>
+
+    <!-- ポイントと、受けているクエスト -->
+    <div class="walk-hud" id="walk-hud">
+      <p class="walk-points"><span id="hud-rank"></span>　<strong id="hud-balance">0</strong> pt（累積 <span id="hud-total">0</span>）</p>
+      <p class="walk-quest" id="hud-quest" hidden></p>
+    </div>
+
+    <div class="toast walk-toast" id="walk-toast" role="status" hidden></div>
+
+    <!-- 七賢人を押したときの紹介 -->
+    <section class="card walk-card" id="walk-card" aria-labelledby="card-name" aria-live="polite" hidden>
+      <p class="walk-card-rarity" id="card-rarity"></p>
+      <h2 class="card-title" id="card-name"></h2>
+      <p class="card-meta" id="card-years"></p>
+      <p class="card-body" id="card-bio"></p>
+      <button type="button" class="btn btn-secondary btn-sm" id="card-close">閉じる</button>
+    </section>
+
+    <div class="walk-map-wrap">
+      <div id="walk-map" class="walk-map" aria-label="えびすさんの位置の地図"></div>
+      <p class="walk-map-note" id="walk-map-note">地図を押すと、そこに立ったことにできます</p>
+    </div>
+  </main>
+
+  <!-- 案内人の QR を読んだとき：話と、もらえたもの・クエスト -->
+  <dialog class="modal walk-dialog" id="guide-dialog" aria-labelledby="guide-title">
+    <form method="dialog">
+      <p class="walk-dialog-kicker">案内人から話を聞きました</p>
+      <h2 class="modal-title" id="guide-title"></h2>
+      <p id="guide-talk" class="walk-talk"></p>
+      <p id="guide-gift"></p>
+      <div class="walk-quest-card" id="guide-quest">
+        <p class="walk-dialog-kicker">クエストが始まりました</p>
+        <h3 id="guide-quest-title" class="card-title"></h3>
+        <p id="guide-quest-body"></p>
+      </div>
+      <div class="modal-actions">
+        <button value="ok" class="btn btn-primary" autofocus>行ってみる</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 図鑑とランキング -->
+  <dialog class="modal walk-dialog walk-book" id="book-dialog" aria-labelledby="book-title">
+    <h2 class="modal-title" id="book-title">図鑑とランキング</h2>
+    <p class="walk-demo-note">デモ版：記録はこの端末のブラウザにだけ保存しています。ランキングのほかの参加者は架空です。</p>
+
+    <div role="tablist" aria-label="見るもの" class="tabs" id="book-tabs">
+      <button role="tab" id="tab-zukan" aria-selected="true" aria-controls="panel-zukan" tabindex="0">図鑑</button>
+      <button role="tab" id="tab-ranking" aria-selected="false" aria-controls="panel-ranking" tabindex="-1">ランキング</button>
+      <button role="tab" id="tab-points" aria-selected="false" aria-controls="panel-points" tabindex="-1">ポイント</button>
+    </div>
+
+    <div role="tabpanel" id="panel-zukan" aria-labelledby="tab-zukan">
+      <p id="zukan-summary"></p>
+      <ul class="zukan" id="zukan-list"></ul>
+    </div>
+
+    <div role="tabpanel" id="panel-ranking" aria-labelledby="tab-ranking" hidden>
+      <div class="walk-segment" role="group" aria-label="並べ替え">
+        <button type="button" class="btn btn-sm" data-metric="collected" aria-pressed="true">集めた数</button>
+        <button type="button" class="btn btn-sm" data-metric="points" aria-pressed="false">累積ポイント</button>
+        <button type="button" class="btn btn-sm" data-metric="quests" aria-pressed="false">クエスト達成</button>
+      </div>
+      <ol class="ranking" id="ranking-list"></ol>
+    </div>
+
+    <div role="tabpanel" id="panel-points" aria-labelledby="tab-points" hidden>
+      <p id="points-summary"></p>
+      <ul class="points-log" id="points-log"></ul>
+      <h3 class="card-title">デモ用の操作</h3>
+      <p class="walk-demo-note">案内人の QR カードがなくても試せるように、読んだことにできます。</p>
+      <div class="walk-demo-actions" id="demo-guides"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-reset">記録を消す</button>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="book-close">閉じる</button>
+    </div>
+  </dialog>
+
+  <p class="walk-credit">道のり：© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors／地図：<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a></p>
+
+  <script src="./vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="./walk.js"></script>
+</body>
+</html>
