@@ -7,24 +7,24 @@ import { pointsMultiplier } from './events.js';
 const $ = (id) => document.getElementById(id);
 
 const ctx = {
-  entries: [], // 図鑑に並べるもの [{ key, name, sub, rarity, board }]
+  entries: [], // 図鑑に並べるもの [{ key, name, sub, grade, board }]
   chapters: [], // 弾（エリア）
   ranking: [], // 架空の参加者
   guides: [],
-  quests: new Map(), // クエスト ID → { quest, guide }
   metric: 'collected',
-  questDistance: () => null, // クエストの目的地までの距離（m）を返す関数
+  questText: () => '', // 受けているクエストの進み具合の文
 };
 
 // ---------- 準備 ----------
 
-export function initBook({ entries, chapters, ranking, guides, questDistance, onDemoGuide }) {
+export function initBook({ entries, catalog, chapters, ranking, guides, questText, onDemoGuide }) {
   ctx.entries = entries;
   ctx.chapters = chapters;
   ctx.ranking = ranking;
   ctx.guides = guides;
-  ctx.questDistance = questDistance;
-  for (const g of guides) if (g.quest) ctx.quests.set(g.quest.id, { quest: g.quest, guide: g });
+  ctx.questText = questText;
+  ctx.catalog = catalog;
+  setupCatalog();
 
   $('btn-book').addEventListener('click', openBook);
   $('book-close').addEventListener('click', () => $('book-dialog').close());
@@ -51,8 +51,6 @@ export function initBook({ entries, chapters, ranking, guides, questDistance, on
   updateHud();
 }
 
-export const questOf = (id) => ctx.quests.get(id);
-
 // ---------- 画面下のポイントとクエスト ----------
 
 export function updateHud() {
@@ -62,14 +60,11 @@ export function updateHud() {
   $('hud-balance').textContent = String(d.balance);
   $('hud-total').textContent = String(d.total);
 
-  const active = progress.activeQuests().map((id) => ctx.quests.get(id)).filter(Boolean);
+  const active = progress.activeQuests();
   const box = $('hud-quest');
   if (!active.length) { box.hidden = true; return; }
   box.hidden = false;
-  box.textContent = active.map(({ quest }) => {
-    const dist = ctx.questDistance(quest);
-    return `クエスト：${quest.title}${dist != null ? `（あと ${Math.round(dist)}m）` : ''}`;
-  }).join('\n');
+  box.textContent = active.map((rec) => `クエスト：${ctx.questText(rec)}`).join('\n');
 }
 
 // ---------- お知らせ ----------
@@ -85,17 +80,19 @@ export function toast(text) {
 
 // ---------- 案内人 ----------
 
+// quest: 受けたクエスト（好みに合わせて作ったもの）。fit: どの好みに合わせたかの説明
 // challenge: { rule, won } 知恵くらべの決まり。勝ったあとは申し込まれない
 // onChallenge: 「知恵くらべを受ける」を選んだときに呼ぶ
-export function showGuide(guide, giftText, challenge, onChallenge) {
+export function showGuide(guide, quest, fit, giftText, challenge, onChallenge) {
   $('guide-title').textContent = guide.name;
   $('guide-talk').textContent = guide.talk;
   $('guide-gift').textContent = giftText;
-  const q = guide.quest;
+  const q = quest;
   $('guide-quest').hidden = !q;
   if (q) {
     $('guide-quest-title').textContent = `${q.title}（${q.points * pointsMultiplier()}pt）`;
     $('guide-quest-body').textContent = q.body;
+    $('guide-quest-fit').textContent = fit;
   }
   const canChallenge = challenge && !challenge.won;
   $('guide-challenge').hidden = !canChallenge;
@@ -180,12 +177,64 @@ function renderZukan() {
     }
   });
 
-  section('佐賀七賢人（レア。どのエリアにも現れる）');
+  section('佐賀七賢人（どのエリアにも現れる）');
   for (const e of ctx.entries.filter((x) => x.key.startsWith('sage:'))) {
     open++;
     if (addEntry(list, e)) got++;
   }
   $('zukan-summary').textContent = `開いているエリアの ${open} のうち ${got} を集めました。`;
+  renderCatalog();
+}
+
+// ---------- 佐賀のえびす像（828体。ガチャで集める） ----------
+
+const CAT_PAGE = 60; // 一度に並べる数（「もっと見る」で増やす）
+const cat = { filter: 'all', shown: CAT_PAGE };
+
+function setupCatalog() {
+  document.querySelectorAll('[data-cat-filter]').forEach((b) => {
+    b.addEventListener('click', () => {
+      cat.filter = b.dataset.catFilter;
+      cat.shown = CAT_PAGE;
+      renderCatalog();
+    });
+  });
+  $('catalog-more').addEventListener('click', () => { cat.shown += CAT_PAGE; renderCatalog(); });
+  $('catalog-credit').textContent = `写真：${ctx.catalog.credit}（公式サイト「佐賀恵比須」から表示しています）`;
+}
+
+function renderCatalog() {
+  const all = ctx.catalog.entries;
+  const got = all.filter((e) => progress.has(e.key)).length;
+  $('catalog-summary').textContent = `${all.length}体のうち ${got}体を集めました（ガチャで出ます）`;
+  document.querySelectorAll('[data-cat-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.catFilter === cat.filter)));
+  const list = all.filter((e) => {
+    if (cat.filter === 'mine') return progress.has(e.key);
+    if (cat.filter === 'all') return true;
+    return e.grade === cat.filter;
+  });
+  const ul = $('catalog-list');
+  ul.replaceChildren();
+  for (const e of list.slice(0, cat.shown)) {
+    const has = progress.has(e.key);
+    const li = document.createElement('li');
+    const img = document.createElement('img');
+    img.src = e.photo;
+    img.loading = 'lazy';
+    img.alt = has ? e.name : 'まだ集めていない像';
+    img.width = 96; img.height = 96;
+    if (!has) img.className = 'is-silhouette';
+    img.onerror = () => { img.replaceWith(Object.assign(document.createElement('span'), { className: 'catalog-noimg', textContent: '写真なし' })); };
+    const badge = Object.assign(document.createElement('span'), { className: 'grade-badge', textContent: e.grade });
+    badge.dataset.grade = e.grade;
+    const name = document.createElement(has ? 'a' : 'span');
+    name.textContent = has ? e.name : '？？？';
+    if (has) { name.href = e.url; name.target = '_blank'; name.rel = 'noopener'; } else name.className = 'is-missing';
+    li.append(img, badge, name);
+    ul.append(li);
+  }
+  $('catalog-more').hidden = list.length <= cat.shown;
+  $('catalog-more').textContent = `もっと見る（あと ${list.length - cat.shown}体）`;
 }
 
 function addEntry(list, e) {
@@ -199,10 +248,11 @@ function addEntry(list, e) {
   name.textContent = has ? e.name : '？？？';
   if (!has) name.className = 'is-missing';
   li.append(c, name);
-  if (e.rarity) {
+  if (e.grade) {
     const r = document.createElement('span');
-    r.className = 'zukan-rarity';
-    r.textContent = e.rarity;
+    r.className = 'grade-badge';
+    r.dataset.grade = e.grade;
+    r.textContent = e.grade;
     li.append(r);
   }
   const sub = document.createElement('span');

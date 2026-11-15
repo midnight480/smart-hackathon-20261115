@@ -9,9 +9,12 @@
 // 写真がなければ、canvas で描いた絵で代わりに出す。
 
 import * as progress from './progress.js';
-import { initBook, updateHud, toast, showGuide, questOf, showLapClear } from './book.js';
-import { initQuiz, startQuiz, rule as quizRule, challengeId } from './quiz.js';
+import { initBook, updateHud, toast, showGuide, showLapClear } from './book.js';
+import { initQuests, makeQuest, openPrefs, prefsText, questText, TYPE_NAMES } from './quests.js';
+import { initQuiz, startQuiz, askOne, rule as quizRule, challengeId } from './quiz.js';
 import { initGacha } from './gacha.js';
+import { initSelfie } from './selfie.js';
+import { gradeOf } from './rarity.js';
 import { initEvents, currentEvent, pointsMultiplier } from './events.js';
 
 // 表示用：イベントの倍率をかけたポイント
@@ -24,6 +27,7 @@ const RANKING_URL = './data/ranking-demo.json';
 const QUIZ_URL = './data/quiz.json';
 const CHAPTERS_URL = './data/chapters.json';
 const EVENTS_URL = './data/events.json';
+const CATALOG_URL = './data/ebisu-catalog.json';
 // 1回の位置の更新でこれより大きく動いたら、GPS の飛びとみなして歩いた距離に数えない（m）
 const WALK_JUMP_M = 500;
 // 同じクエストに挑戦中のほかの参加者（デモでは架空）が、地図の上を歩く速さ（m/秒）
@@ -39,10 +43,11 @@ const ARRIVE_M = 30;
 const CHARACTERS_URL = './data/characters.json';
 // 目の高さ（m）。スマホを顔の前に構えたときの目安
 const EYE_HEIGHT_M = 1.5;
-// えびす像の背の高さ（m）。実物は 50cm〜1m 前後
-const STATUE_HEIGHT_M = 1.0;
-// 人（七賢人）の背の高さ（m）
-const PERSON_HEIGHT_M = 1.65;
+// 背の高さ（m）は data/characters.json の heightM を使う。書いていないときの値
+// えびす像：佐賀の恵比須像は数十cm〜1m 前後の石像が多い
+const STATUE_HEIGHT_M = 0.6;
+// 人（七賢人）：幕末の成人男性の平均くらい
+const PERSON_HEIGHT_M = 1.57;
 // 歩く速さ（m/秒）
 const WALK_SPEED = 0.9;
 // えびすさんが歩き始める位置：自分にいちばん近い道の上から、この距離だけ先
@@ -92,7 +97,7 @@ const state = {
   nextSageAt: 0,
   statues: [], // 実在のえびす像 [{ id, name, n, e }]
   chapters: [], // 図鑑の弾（エリア）
-  others: [], // 同じクエストに挑戦中のほかの参加者（デモでは架空）{ name, quest, s, dir, marker }
+  others: [], // 同じクエストに挑戦中のほかの参加者（デモでは架空）{ name, questType, s, dir, marker }
   guides: [],
   hits: [], // 押せる範囲（描いたときの外枠）
   labels: [], // 描いた名前の位置（重ならないようにずらすため）
@@ -304,7 +309,14 @@ function makeBoard({ drawFn, img }) {
   const face = silhouette(css('--walk-board-face'));
   face.getContext('2d').drawImage(art, 0, 0);
   const edge = silhouette(css('--walk-board-edge'));
-  return { face, edge, x0, y0, w, h };
+  // 絵（写真）の本当の上端と下端を測る。背の高さをここに合わせる（帽子や髷の先までを身長とみなす）
+  const px = a.getImageData(0, 0, cw, ch).data;
+  const rowHas = (y) => { for (let x = 0; x < cw; x++) if (px[(y * cw + x) * 4 + 3] > 16) return true; return false; };
+  let top = 0; while (top < ch - 1 && !rowHas(top)) top++;
+  let bottom = ch - 1; while (bottom > top && !rowHas(bottom)) bottom--;
+  const topU = y0 + top / BOARD_PX;
+  const bottomU = y0 + (bottom + 1) / BOARD_PX;
+  return { face, edge, x0, y0, w, h, figureH: bottomU - topU, bottom: bottomU };
 }
 
 let boardMode = false; // 板を作っているあいだは、影や足の動きを描かない
@@ -313,6 +325,8 @@ let boardMode = false; // 板を作っているあいだは、影や足の動き
 function drawBoard(board, phase, face) {
   drawShadow(board.w * 0.3);
   ctx.save();
+  // 写真の下に透明な余白があっても、足元が地面に付くようにする
+  ctx.translate(0, -board.bottom);
   // 歩く：上下に弾ませ、足元を軸に左右へ揺らす
   ctx.translate(0, -Math.abs(Math.sin(phase)) * 4);
   ctx.rotate(Math.sin(phase) * 0.06);
@@ -331,6 +345,67 @@ function drawBoard(board, phase, face) {
   ctx.restore();
 }
 
+// 正面の写真しかないとき、横向きは板を斜めにした（細くした）ように見せる
+const TURNED_SCALE = 0.6;
+// 向きを切り替える境目（度）と、行ったり来たりしないための遊び（度）
+const VIEW_SIDE_DEG = 45;
+const VIEW_MARGIN_DEG = 8;
+
+// 見ている人から見て、どの向きの絵を出すか。
+// 自分 → キャラの線に対して、進む向きがほぼ同じ（遠ざかる）か逆（近づく）なら正面、
+// 時計回りにずれていれば画面の右へ動くので右向き、反時計回りなら左向き
+function wantView(wk, p, heading) {
+  if (wk.pos && !wk.moving) return wk.views.front ? 'front' : (wk.view ?? 'right'); // 立ち止まった仲間はこちらを向く
+  let a = heading - bearing(state.user, p);
+  a = ((a + 540) % 360) - 180; // -180〜180
+  const abs = Math.abs(a);
+  const m = wk.view === 'front' ? VIEW_MARGIN_DEG : -VIEW_MARGIN_DEG;
+  const side = abs > VIEW_SIDE_DEG + m && abs < 180 - VIEW_SIDE_DEG - m;
+  if (side) return a > 0 ? 'right' : 'left';
+  // 正面の絵がないキャラ（絵で描いたもの）は、前後に動くときも、今の横向きのまま
+  return wk.views.front ? 'front' : (wk.view ?? 'right');
+}
+
+// 向きごとの板を用意する。
+// imgs = { front, left, right, side }（写真。なければ null）、faces = 正面写真の顔の向き、sideFaces = side 写真の向き
+// draw = 写真がないときに描く絵（右向き）
+function makeViews({ imgs = {}, faces = 'front', sideFaces = 'right', draw }) {
+  const B = (img) => makeBoard({ img });
+  const views = {};
+  if (imgs.front) views.front = { board: B(imgs.front), mirror: false };
+  const sideOf = (dir) => {
+    const other = dir === 'right' ? 'left' : 'right';
+    if (imgs[dir]) return { board: B(imgs[dir]), mirror: false };
+    if (imgs.side) return { board: B(imgs.side), mirror: sideFaces !== dir };
+    if (imgs[other]) return { board: B(imgs[other]), mirror: true };
+    // 正面写真しかない：顔が少しでも横を向いていれば、その向きに合わせて反転し、板を斜めにして見せる
+    if (views.front) return { board: views.front.board, mirror: faces === other, turned: true };
+    return null;
+  };
+  const drawn = draw ? makeBoard({ drawFn: draw }) : null;
+  views.right = sideOf('right') ?? { board: drawn, mirror: false };
+  views.left = sideOf('left') ?? { board: drawn, mirror: true };
+  return views;
+}
+
+// 向きを確かめるための板（?views=test）。正面・左・右が文字で分かる
+function testViews(color) {
+  const draw = (label) => () => {
+    ctx.fillStyle = color;
+    ctx.fillRect(-40, -120, 80, 120);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, 0, -50);
+    ctx.textAlign = 'start';
+  };
+  return {
+    front: { board: makeBoard({ drawFn: draw('正面') }), mirror: false },
+    left: { board: makeBoard({ drawFn: draw('←左') }), mirror: false },
+    right: { board: makeBoard({ drawFn: draw('右→') }), mirror: false },
+  };
+}
+
 // 現れてすぐと、去る直前は薄くする
 function opacity(wk) {
   if (!wk.until) return 1;
@@ -342,38 +417,41 @@ function drawWalker(wk, project, time, dpr) {
   const p = posOf(wk);
   const feet = project(groundVec(p));
   if (!feet) return;
-  // 進む向きの 1m 先が画面の右なら、右を向いて描く
   const heading = wk.pos || wk.dir > 0 ? p.heading : (p.heading + 180) % 360;
-  const ahead = project(groundVec({ n: p.n + Math.cos(rad(heading)), e: p.e + Math.sin(rad(heading)) }));
-  const faceRight = ahead ? ahead[0] >= feet[0] : true;
 
-  const k = (wk.height * feet[2]) / 100; // 絵は高さ 100 の単位で描く
+  // 絵の上端から下端まで（figureH 単位）が、ちょうど背の高さ（m）になるよう縮める
+  const k = (wk.height * feet[2]) / wk.board.figureH;
   // 立ち止まっている仲間は弾まない
   const phase = wk.pos && !wk.moving ? 0 : (time / 1000) * Math.PI * 2 * 1.8 + (wk.s ?? wk.offset ?? 0); // 1秒に 1.8 歩。キャラごとに足並みをずらす
 
-  // 向きを変えるときは、板がくるっと回る（写真で flip しないものは回さない）
-  const target = faceRight || (wk.image && !wk.flip) ? 1 : -1;
+  // 向きを変えるときは、板がくるっと回って（細くなって）から、別の向きの絵に替わる
+  const want = wantView(wk, p, heading);
   const dt = wk.lastT ? Math.min(0.1, (time - wk.lastT) / 1000) : 1;
   wk.lastT = time;
-  wk.face = wk.face == null ? target : wk.face + (target - wk.face) * Math.min(1, dt * TURN_SPEED);
+  if (!wk.view) { wk.view = want; wk.turn = 1; }
+  const goal = want === wk.view ? 1 : 0;
+  wk.turn += (goal - wk.turn) * Math.min(1, dt * TURN_SPEED);
+  if (goal === 0 && wk.turn < 0.08) wk.view = want;
+  const v = wk.views[wk.view];
+  wk.board = v.board;
 
   ctx.save();
   ctx.globalAlpha = opacity(wk);
   ctx.translate(feet[0], feet[1]);
   ctx.scale(k, k);
-  drawBoard(wk.board, phase, wk.face);
+  drawBoard(v.board, phase, Math.max(0.02, wk.turn) * (v.mirror ? -1 : 1) * (v.turned ? TURNED_SCALE : 1));
   ctx.restore();
 
   // 押せる範囲（指で押しやすいよう、最低 44px 角）
   const minHalf = 22 * dpr;
   const half = Math.max(minHalf, (wk.board.w / 2) * k);
-  const top = feet[1] - Math.max(118 * k, 2 * minHalf);
+  const top = feet[1] - Math.max(wk.board.figureH * k, 2 * minHalf);
   state.hits.push({ wk, x0: feet[0] - half, x1: feet[0] + half, y0: top, y1: feet[1] });
 
   // 名前と距離
   const label = wk.kind === 'party' ? `仲間：${wk.sage.name}` : wk.kind === 'ebisu'
     ? `えびすさん ${Math.round(distTo(p))}m`
-    : `【${wk.sage.rarity}】${wk.sage.name} ${Math.round(distTo(p))}m`;
+    : `【${wk.sage.grade}】${wk.sage.name} ${Math.round(distTo(p))}m`;
   ctx.font = `${14 * dpr}px ${css('--font-family')}`;
   ctx.textAlign = 'center';
   ctx.globalAlpha = opacity(wk);
@@ -383,7 +461,7 @@ function drawWalker(wk, project, time, dpr) {
   // ほかの名前と重なるなら、重ならなくなるまで上にずらす
   const lw = ctx.measureText(label).width;
   const lh = 18 * dpr;
-  let ly = feet[1] - 118 * k - 6 * dpr;
+  let ly = feet[1] - wk.board.figureH * k - 6 * dpr;
   const overlaps = (y) => state.labels.some((b) =>
     Math.abs(b.x - feet[0]) < (b.w + lw) / 2 && Math.abs(b.y - y) < lh);
   for (let i = 0; i < 12 && overlaps(ly); i++) ly -= lh;
@@ -548,19 +626,20 @@ function spawnSage(sage, near) {
   const offset = rand(SAGE_SPAWN_M) * (Math.random() < 0.5 ? 1 : -1);
   const t = nowS();
   state.walkers.push({
-    kind: 'sage', sage, dir, height: PERSON_HEIGHT_M, image: sage.img, flip: sage.flip, board: sage.board,
+    kind: 'sage', sage, dir, height: sage.heightM ?? PERSON_HEIGHT_M, views: sage.views, board: sage.board,
     s: Math.max(0, Math.min(state.total, near + offset)),
     born: t, until: t + SAGE_STAY_S,
   });
 }
 
-// 重み（weight）に合わせて、まだ出ていない七賢人を一人選ぶ
+// レア度の出やすさ（spawn）に合わせて、まだ出ていない七賢人を一人選ぶ
 function pickSage() {
   const out = [...state.walkers.filter((w) => w.kind === 'sage').map((w) => w.sage.id), ...progress.get().party];
   const pool = state.sages.filter((s) => !out.includes(s.id));
-  const total = pool.reduce((a, s) => a + s.weight, 0);
+  const w = (s) => gradeOf(s.grade).spawn;
+  const total = pool.reduce((a, s) => a + w(s), 0);
   let r = Math.random() * total;
-  for (const s of pool) { r -= s.weight; if (r <= 0) return s; }
+  for (const s of pool) { r -= w(s); if (r <= 0) return s; }
   return null;
 }
 
@@ -592,7 +671,7 @@ function tick(time) {
     state.az = bearing(state.user, p);
     const dist = Math.max(1, distTo(p));
     // 像の真ん中あたりを見る
-    state.alt = deg(Math.atan2(STATUE_HEIGHT_M / 2 - EYE_HEIGHT_M, dist));
+    state.alt = deg(Math.atan2(state.ebisu.height / 2 - EYE_HEIGHT_M, dist));
   }
 
   draw(time);
@@ -626,7 +705,7 @@ function updateStatus() {
   }
   const others = othersOnQuest();
   $('hud-others').hidden = !others.length;
-  $('hud-others').textContent = `同じクエストに挑戦中：${others.length}人（地図の緑の点）`;
+  $('hud-others').textContent = `同じ種類のクエストに挑戦中：${others.length}人（地図の緑の点）`;
   $('hud-party').hidden = !party.length;
   $('hud-party').textContent = `パーティー（後ろに付いてくる）：${party.join('、')}`;
 }
@@ -635,8 +714,9 @@ function updateStatus() {
 function checkArrivals() {
   for (const st of state.statues) {
     if (distTo(st) > ARRIVE_M) continue;
-    if (progress.collect(`ebisu:${st.id}`, st.name, progress.POINTS.ebisu)) {
-      toast(`${st.name}に着きました。図鑑に登録（+${boosted(progress.POINTS.ebisu)}pt）`);
+    const pts = gradeOf(st.grade).statuePoints;
+    if (progress.collect(`ebisu:${st.id}`, st.name, pts)) {
+      toast(`【${st.grade}】${st.name}に着きました。図鑑に登録（+${boosted(pts)}pt）`);
     }
     // 開いている弾の周回を進める
     state.chapters.forEach((ch, i) => {
@@ -645,23 +725,67 @@ function checkArrivals() {
       if (r?.cleared) showLapClear(ch, r, state.chapters[i + 1]);
     });
   }
-  for (const id of progress.activeQuests()) {
-    const q = questOf(id)?.quest;
-    const d = q && questDistance(q);
-    if (d != null && d <= ARRIVE_M && progress.completeQuest(q)) {
-      toast(`クエスト「${q.title}」を達成（+${boosted(q.points)}pt）`);
+  checkQuests();
+}
+
+const statueDist = (id) => {
+  const st = state.statues.find((s) => s.id === id);
+  return st ? distTo(st) : Infinity;
+};
+const at = (id) => statueDist(id) <= ARRIVE_M;
+
+// 受けているクエストを、種類ごとに確かめる
+const questSeen = new Set(); // 「着いたけど…」のお知らせや問題を、着いている間に何度も出さないため
+function checkQuests() {
+  const done = (q) => {
+    if (progress.completeQuest(q)) toast(`クエスト「${q.title}」を達成（+${boosted(q.points)}pt）`);
+  };
+  for (const rec of progress.activeQuests()) {
+    const q = rec.def;
+    const here = q.target && at(q.target);
+    const key = `${q.id}:${q.target}`;
+    if (!here) questSeen.delete(key);
+    switch (q.type) {
+      case 'visit':
+        if (here) done(q);
+        break;
+      case 'timed':
+        if (Date.now() > rec.deadline) {
+          if (progress.failQuest(q.id)) toast(`クエスト「${q.title}」は時間切れ。案内人の QR をもう一度読むと、次のクエストがもらえます`);
+        } else if (here) done(q);
+        break;
+      case 'tour': {
+        const next = q.targets[rec.step ?? 0];
+        if (!at(next)) break;
+        progress.advanceQuest(q.id);
+        if (rec.step >= q.targets.length) done(q);
+        else toast(`${state.statues.find((s) => s.id === next)?.name}をお参り（${rec.step}/${q.targets.length}）`);
+        break;
+      }
+      case 'escort':
+        if (!here) break;
+        if (progress.get().party.includes(q.sage)) done(q);
+        else if (!questSeen.has(key)) {
+          questSeen.add(key);
+          toast(`着いたけれど、${state.sages.find((s) => s.id === q.sage)?.name}がパーティーにいません`);
+        }
+        break;
+      case 'walk':
+        if (progress.get().walkM - (rec.startWalk ?? 0) >= q.meters) done(q);
+        break;
+      case 'answer':
+        if (!here || questSeen.has(key) || $('quiz-dialog').open) break;
+        questSeen.add(key);
+        askOne(q.quiz, q.title, (ok) => { if (ok) done(q); updateHud(); });
+        break;
+      default:
     }
   }
 }
 
-function questDistance(quest) {
-  const st = state.statues.find((s) => s.id === quest.target);
-  return st ? distTo(st) : null;
-}
-
 // 七賢人に出会った（押した）
 function meetSage(sage) {
-  const pts = sage.weight === 1 ? progress.POINTS.sageRare : progress.POINTS.sage;
+  const pts = gradeOf(sage.grade).sagePoints;
   const first = progress.collect(`sage:${sage.id}`, sage.name, pts);
   joinParty(sage);
   toast(first
@@ -678,7 +802,7 @@ function updateOthers(dt) {
     o.s += o.dir * OTHERS_SPEED * dt;
     if (o.s >= state.total) { o.s = state.total; o.dir = -1; }
     if (o.s <= 0) { o.s = 0; o.dir = 1; }
-    const show = active.includes(o.quest);
+    const show = active.some((rec) => rec.def.type === o.questType);
     if (show && !o.marker && state.map) {
       o.marker = L.circleMarker(toLatLng(pointAt(o.s)), {
         radius: 5, color: '#ffffff', weight: 2, fillColor: css('--walk-other'), fillOpacity: 1,
@@ -692,7 +816,7 @@ function updateOthers(dt) {
 
 function othersOnQuest() {
   const active = progress.activeQuests();
-  return state.others.filter((o) => active.includes(o.quest));
+  return state.others.filter((o) => active.some((rec) => rec.def.type === o.questType));
 }
 
 // ---------- パーティー ----------
@@ -717,7 +841,7 @@ function joinParty(sage) {
 
 function partyWalker(sage, pos) {
   return {
-    kind: 'party', sage, height: PERSON_HEIGHT_M, image: sage.img, flip: sage.flip, board: sage.board,
+    kind: 'party', sage, height: sage.heightM ?? PERSON_HEIGHT_M, views: sage.views, board: sage.board,
     pos: { ...pos }, heading: state.walkHeading, offset: Math.random() * 10, born: nowS(),
   };
 }
@@ -754,7 +878,10 @@ function updateParty(dt) {
 
 // 案内人の QR（walk?guide=<id>.<code>）。合言葉が合えば、話・もらえるもの・クエストを出す
 function handleGuide(guide) {
-  progress.meetGuide(guide);
+  // 好みをまだ聞いていなければ、先に聞いてからクエストを作る
+  if (!progress.prefs()) { openPrefs(() => handleGuide(guide)); return; }
+  const { quest } = progress.meetGuide(guide, makeQuest);
+  const fit = quest ? `種類：${TYPE_NAMES[quest.type]}／あなたの好み（${prefsText()}）に合わせて作りました` : '';
   let gift = '';
   const sage = state.sages.find((s) => s.id === guide.gift);
   if (sage) {
@@ -765,13 +892,13 @@ function handleGuide(guide) {
       : `「${sage.name}」がパーティーに加わりました。`;
   }
   gift += `（話を聞いて +${boosted(progress.POINTS.guide)}pt）`;
-  showGuide(guide, gift, { rule: quizRule(), won: progress.challengeWon(challengeId(guide)) }, () => startQuiz(guide));
+  showGuide(guide, quest, fit, gift, { rule: quizRule(), won: progress.challengeWon(challengeId(guide)) }, () => startQuiz(guide));
   updateHud();
 }
 
 function guideFromUrl() {
   const q = new URLSearchParams(location.search).get('guide');
-  if (!q) return;
+  if (!q) return false;
   const [id, code] = q.split('.');
   const guide = state.guides.find((g) => g.id === id);
   // 読み直しで何度も出ないよう、URL から外しておく
@@ -780,9 +907,10 @@ function guideFromUrl() {
   history.replaceState(null, '', url);
   if (!guide || guide.code !== code) {
     toast('この QR コードは使えません');
-    return;
+    return false;
   }
   handleGuide(guide);
+  return true;
 }
 
 // 地図の印を、歩いているキャラクターに合わせて足し引きする
@@ -826,7 +954,8 @@ function setUser(p) {
 // ---------- 人物の紹介 ----------
 
 function showCard(sage) {
-  $('card-rarity').textContent = sage.rarity;
+  $('card-rarity').textContent = `${sage.grade}（${gradeOf(sage.grade).name}）`;
+  $('card-rarity').dataset.grade = sage.grade;
   $('card-name').textContent = sage.name;
   $('card-years').textContent = sage.years;
   $('card-bio').textContent = sage.bio;
@@ -961,18 +1090,27 @@ function loadImage(url) {
 }
 
 async function main() {
-  const [route, chars, ebisuData, guides, ranking, quiz, chapters, eventsData] = await Promise.all(
-    [ROUTE_URL, CHARACTERS_URL, EBISU_URL, GUIDES_URL, RANKING_URL, QUIZ_URL, CHAPTERS_URL, EVENTS_URL].map((u) => fetch(u).then((r) => r.json())),
+  const [route, chars, ebisuData, guides, ranking, quiz, chapters, eventsData, catalog] = await Promise.all(
+    [ROUTE_URL, CHARACTERS_URL, EBISU_URL, GUIDES_URL, RANKING_URL, QUIZ_URL, CHAPTERS_URL, EVENTS_URL, CATALOG_URL].map((u) => fetch(u).then((r) => r.json())),
   );
-  // 写真を読み込む（読めなかったものは絵で代わりに出す）
-  const [ebisuImg, ...sageImgs] = await Promise.all(
-    [chars.ebisu, ...chars.sages].map((c) => loadImage(c.image)),
-  );
+  // 写真を読み込む（正面・左・右・横。読めなかったものは絵で代わりに出す）
+  const loadViews = async (c) => {
+    const src = { front: c.image, ...(c.images ?? {}) };
+    const keys = ['front', 'left', 'right', 'side'];
+    const imgs = await Promise.all(keys.map((k) => loadImage(src[k])));
+    return Object.fromEntries(keys.map((k, i) => [k, imgs[i]]));
+  };
+  const [ebisuImgs, ...sageImgs] = await Promise.all([chars.ebisu, ...chars.sages].map(loadViews));
+  const testMode = new URLSearchParams(location.search).get('views') === 'test';
   chars.sages.forEach((s, i) => {
-    s.img = sageImgs[i];
-    s.board = makeBoard(s.img ? { img: s.img } : { drawFn: () => drawSage(s, 0) });
+    s.views = testMode ? testViews(s.color) : makeViews({
+      imgs: sageImgs[i], faces: s.faces, sideFaces: s.sideFaces, draw: () => drawSage(s, 0),
+    });
+    // 図鑑やガチャに出す絵は、正面があれば正面
+    s.board = (s.views.front ?? s.views.right).board;
   });
-  const ebisuBoard = makeBoard(ebisuImg ? { img: ebisuImg } : { drawFn: () => drawEbisu(0) });
+  const ebisuViews = makeViews({ imgs: ebisuImgs, faces: chars.ebisu.faces, sideFaces: chars.ebisu.sideFaces, draw: () => drawEbisu(0) });
+  const ebisuBoard = (ebisuViews.front ?? ebisuViews.right).board;
   const coords = route.coordinates;
   state.origin = { lat: coords[0][1], lng: coords[0][0] };
   let s = 0;
@@ -986,16 +1124,16 @@ async function main() {
   });
   state.total = s;
   state.sages = chars.sages;
-  state.statues = ebisuData.ebisu.map((e) => ({ id: e.id, name: e.name, area: e.area, builtYear: e.builtYear, ...toLocal(e.lat, e.lng) }));
+  state.statues = ebisuData.ebisu.map((e) => ({ id: e.id, name: e.name, area: e.area, builtYear: e.builtYear, quiz: e.history?.quiz, grade: chars.ebisu.grades?.[e.id] ?? 'N', ...toLocal(e.lat, e.lng) }));
   state.guides = guides.guides;
   initEvents(eventsData);
   state.chapters = chapters.chapters;
-  state.others = ranking.players.filter((p) => p.quest).map((p) => ({
-    name: p.name, quest: p.quest, s: Math.min(p.s, state.total), dir: Math.random() < 0.5 ? 1 : -1, marker: null,
+  state.others = ranking.players.filter((p) => p.questType).map((p) => ({
+    name: p.name, questType: p.questType, s: Math.min(p.s, state.total), dir: Math.random() < 0.5 ? 1 : -1, marker: null,
   }));
 
   state.ebisu = {
-    kind: 'ebisu', s: 0, dir: 1, height: STATUE_HEIGHT_M, image: ebisuImg, flip: chars.ebisu.flip, board: ebisuBoard,
+    kind: 'ebisu', s: 0, dir: 1, height: chars.ebisu.heightM ?? STATUE_HEIGHT_M, views: ebisuViews, board: ebisuBoard,
   };
   state.walkers.push(state.ebisu);
 
@@ -1022,25 +1160,32 @@ async function main() {
   setupInput();
   const bookEntries = [
       ...state.statues.map((st) => ({
-        key: `ebisu:${st.id}`, name: st.name, sub: `${st.builtYear}年・${st.area.split('（')[0]}`,
+        key: `ebisu:${st.id}`, name: st.name, grade: st.grade, sub: `${st.builtYear}年・${st.area.split('（')[0]}`,
         hint: 'その場所まで行くと集まる', board: ebisuBoard,
       })),
       ...state.sages.map((s) => ({
-        key: `sage:${s.id}`, name: s.name, sub: s.years, rarity: s.rarity,
+        key: `sage:${s.id}`, name: s.name, sub: s.years, grade: s.grade,
         hint: state.guides.some((g) => g.gift === s.id) ? '歩いて出会うか、案内人からもらう' : '歩いていると出会える',
         board: s.board,
       })),
   ];
+  // 佐賀のえびす像の一覧（場所が分からないので、ガチャと図鑑だけで集める。写真は公式サイトから直接読む）
+  const catalogEntries = catalog.items.map((it) => ({
+    key: `cat:${it.fid}`, name: it.name, grade: it.grade, photo: it.img, url: it.url, board: ebisuBoard, catalog: true,
+  }));
   initBook({
     entries: bookEntries,
+    catalog: { entries: catalogEntries, credit: catalog.credit, total: catalog.items.length },
     chapters: state.chapters,
     ranking: ranking.players,
     guides: state.guides,
-    questDistance,
+    questText,
     onDemoGuide: handleGuide,
   });
   initQuiz({ quiz, sages: state.sages, onEnd: () => updateHud() });
-  initGacha({ entries: bookEntries });
+  initGacha({ entries: [...bookEntries, ...catalogEntries], credit: catalog.credit });
+  initSelfie({ sages: state.sages, ebisuBoard });
+  initQuests({ statues: state.statues, sages: state.sages, distTo: statueDist, arriveM: ARRIVE_M });
 
   // 前回までのパーティーを、自分の後ろに並べる。進む向きは、最初に見ているえびすさんの方
   state.walkHeading = bearing(state.user, pointAt(state.ebisu.s));
@@ -1048,7 +1193,10 @@ async function main() {
     const sage = state.sages.find((s) => s.id === id);
     if (sage) state.walkers.push(partyWalker(sage, partyTarget(i)));
   });
-  guideFromUrl();
+  // ?debug のときだけ、確かめ用に地図の操作をコンソールから呼べるようにする
+  if (new URLSearchParams(location.search).has('debug')) window.walkDebug = { state, map: state.map };
+  // はじめての人には、先に好みを聞く（案内人の QR から来た人は、そちらで聞く）
+  if (!guideFromUrl() && !progress.prefs()) openPrefs(() => toast(`好みを覚えました：${prefsText()}`));
   $('btn-camera').addEventListener('click', startCamera);
   $('btn-restart').addEventListener('click', restart);
   startGps();

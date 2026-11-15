@@ -14,24 +14,64 @@ const ctx = {
 };
 
 let game = null; // { guide, questions, i, correct, hintUsed, answered }
+let single = null; // askOne で1問だけ出しているとき { onResult }
 
 export function initQuiz({ quiz, sages, onEnd }) {
   ctx.quiz = quiz;
   for (const s of sages) ctx.sages.set(s.id, s);
   ctx.onEnd = onEnd;
-  $('quiz-next').addEventListener('click', next);
+  $('quiz-next').addEventListener('click', () => (single ? $('quiz-dialog').close() : next()));
   $('quiz-hint').addEventListener('click', useHint);
   // Esc で閉じたら、その勝負は負け（途中でやめてもポイントは引く）
   $('quiz-dialog').addEventListener('cancel', (e) => {
+    if (single) { single = null; return; }
     if (game && !game.over) { e.preventDefault(); toResult(true); }
   });
+  $('quiz-dialog').addEventListener('close', () => { single = null; });
 }
 
 export const rule = () => ctx.quiz.rule;
 export const challengeId = (guide) => `quiz-${guide.id}`;
 
 // 勝負を始める
+// クエスト「見て答える」の1問。q = { question, choices, answer（正解の文字列） }
+// onResult(ok) は答えたときに1度だけ呼ぶ
+export function askOne(q, title, onResult) {
+  single = { onResult };
+  $('quiz-count').textContent = 'クエストの問題';
+  $('quiz-title').textContent = title;
+  $('quiz-question').textContent = q.question;
+  $('quiz-feedback').textContent = '';
+  $('quiz-hint').hidden = true;
+  $('quiz-next').hidden = true;
+  const box = $('quiz-choices');
+  box.replaceChildren();
+  for (const c of q.choices) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn-secondary';
+    b.textContent = c;
+    b.addEventListener('click', () => {
+      const ok = c === q.answer;
+      for (const x of box.children) {
+        x.disabled = true;
+        // 答え直せるので、間違えたときは正解を見せない
+        if (x === b) x.classList.add(ok ? 'is-correct' : 'is-wrong');
+      }
+      $('quiz-feedback').textContent = ok ? '正解！' : 'ざんねん。もう一度着いたときに答え直せます。';
+      $('quiz-next').textContent = '閉じる';
+      $('quiz-next').hidden = false;
+      $('quiz-next').focus();
+      single?.onResult(ok);
+    });
+    box.append(b);
+  }
+  $('quiz-dialog').showModal();
+  box.firstElementChild?.focus();
+}
+
 export function startQuiz(guide) {
+  single = null;
   const { count } = ctx.quiz.rule;
   const pool = [...ctx.quiz.questions].sort(() => Math.random() - 0.5);
   game = { guide, questions: pool.slice(0, count), i: 0, correct: 0, hintUsed: false, answered: false, over: false };

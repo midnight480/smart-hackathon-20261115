@@ -166,6 +166,13 @@ export function buyGacha(yen) {
   save();
 }
 
+// 記念撮影をした。はじめてなら true
+export function addSelfie() {
+  data.selfies = (data.selfies ?? 0) + 1;
+  save();
+  return data.selfies === 1;
+}
+
 export function bonus(points, text) {
   addPoints(points, text);
   save();
@@ -174,7 +181,9 @@ export function bonus(points, text) {
 export const get = () => data;
 export const has = (key) => Boolean(data.collected[key]);
 export const collectedCount = () => Object.keys(data.collected).length;
-export const questsDone = () => Object.values(data.quests).filter((q) => q.status === 'done').length;
+// クエストを達成した回数（同じクエストをやり直して達成した分も数える）
+export const questsDone = () => Object.values(data.quests)
+  .reduce((a, q) => a + (q.doneCount ?? (q.status === 'done' ? 1 : 0)), 0);
 
 export function rankOf(total) {
   let rank = RANKS[0];
@@ -193,21 +202,66 @@ export function collect(key, label, points) {
 }
 
 // 案内人から話を聞いた。初めてならポイントを足し、クエストを受ける
-export function meetGuide(guide) {
+// 案内人から話を聞く。make(guide) で、好みに合わせたクエストを1つ作って受ける。
+// この案内人のクエストを受けている途中なら、新しくは作らず、それを返す。
+export function meetGuide(guide, make) {
   const first = !data.guides[guide.id];
   if (first) {
     data.guides[guide.id] = new Date().toISOString();
     addPoints(POINTS.guide, `${guide.name}から話を聞いた`);
   }
-  if (guide.quest && !data.quests[guide.quest.id]) {
-    data.quests[guide.quest.id] = { status: 'active', at: new Date().toISOString() };
+  let rec = Object.values(data.quests).find((q) => q.status === 'active' && q.def?.guide === guide.id);
+  if (!rec) {
+    const def = make(guide);
+    rec = {
+      status: 'active',
+      at: new Date().toISOString(),
+      def,
+      step: 0, // tour：いくつ目まで回ったか
+      startWalk: data.walkM, // walk：受けたときの歩いた距離
+      deadline: def.limitMin ? Date.now() + def.limitMin * 60 * 1000 : null, // timed
+    };
+    data.quests[def.id] = rec;
   }
   save();
-  return first;
+  return { first, quest: rec.def };
 }
 
+// この案内人が前に出した種類（続けて同じ種類にしないため）
+export function lastQuestType(guideId) {
+  const list = Object.values(data.quests).filter((q) => q.def?.guide === guideId);
+  return list.sort((a, b) => (a.at < b.at ? 1 : -1))[0]?.def.type ?? null;
+}
+
+// 参加する人の好み { likes: ['history', ...], pace: 'normal' }。まだなら null
+export const prefs = () => data.prefs ?? null;
+export function setPrefs(p) {
+  data.prefs = p;
+  save();
+}
+
+export const questState = (id) => data.quests[id] ?? null;
+
+// tour を1つ進める
+export function advanceQuest(id) {
+  const q = data.quests[id];
+  if (!q) return;
+  q.step = (q.step ?? 0) + 1;
+  save();
+}
+
+// timed の時間切れなど。ポイントは減らさない
+export function failQuest(id) {
+  const q = data.quests[id];
+  if (!q || q.status !== 'active') return false;
+  q.status = 'failed';
+  save();
+  return true;
+}
+
+// 受けている途中のクエスト [{ status, def, step, startWalk, deadline }]
 export function activeQuests() {
-  return Object.entries(data.quests).filter(([, q]) => q.status === 'active').map(([id]) => id);
+  return Object.values(data.quests).filter((q) => q.status === 'active' && q.def);
 }
 
 export function completeQuest(quest) {
@@ -215,6 +269,7 @@ export function completeQuest(quest) {
   if (!q || q.status === 'done') return false;
   q.status = 'done';
   q.doneAt = new Date().toISOString();
+  q.doneCount = (q.doneCount ?? 0) + 1;
   addPoints(quest.points, `クエスト「${quest.title}」を達成`);
   save();
   return true;

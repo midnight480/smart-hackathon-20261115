@@ -21,6 +21,7 @@
       <button type="button" class="btn btn-secondary btn-sm" id="btn-restart">近くから歩かせる</button>
       <button type="button" class="btn btn-secondary btn-sm" id="btn-book">図鑑・ランキング</button>
       <button type="button" class="btn btn-secondary btn-sm" id="btn-gacha">ガチャ</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-selfie">記念撮影</button>
     </div>
 
     <p class="walk-status" id="walk-status" aria-live="polite"></p>
@@ -62,6 +63,7 @@
         <p class="walk-dialog-kicker">クエストが始まりました</p>
         <h3 id="guide-quest-title" class="card-title"></h3>
         <p id="guide-quest-body"></p>
+        <p id="guide-quest-fit" class="walk-demo-note"></p>
       </div>
       <div class="walk-quest-card" id="guide-challenge">
         <p class="walk-dialog-kicker">知恵くらべを申し込まれました</p>
@@ -74,6 +76,57 @@
     </form>
   </dialog>
 
+  <!-- パーティーの七賢人と記念撮影 -->
+  <dialog class="modal walk-dialog selfie-dialog" id="selfie-dialog" aria-labelledby="selfie-title">
+    <h2 class="modal-title" id="selfie-title">七賢人と記念撮影</h2>
+    <div id="selfie-live">
+      <div class="selfie-frame">
+        <canvas id="selfie-canvas" class="selfie-canvas" role="img" aria-label="カメラの映像と七賢人"></canvas>
+        <div class="selfie-flash" id="selfie-flash" aria-hidden="true"></div>
+      </div>
+      <p class="walk-demo-note" id="selfie-hint"></p>
+      <div class="selfie-tools">
+        <span class="walk-demo-note" id="selfie-selected"></span>
+        <button type="button" class="btn btn-secondary btn-sm" id="selfie-smaller">小さく</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="selfie-bigger">大きく</button>
+      </div>
+      <label class="check"><input type="checkbox" id="selfie-ebisu" checked> えびすさんも一緒に写る</label>
+      <button type="button" class="btn btn-primary selfie-shoot" id="selfie-shoot">撮る</button>
+    </div>
+    <div id="selfie-result" hidden>
+      <img id="selfie-photo" class="selfie-photo" alt="撮った記念写真">
+      <p class="walk-demo-note">写真はこの端末の中だけで作りました。どこにも送っていません。</p>
+      <div class="selfie-tools">
+        <a class="btn btn-primary" id="selfie-save">保存する</a>
+        <button type="button" class="btn btn-secondary" id="selfie-share" hidden>共有する</button>
+        <button type="button" class="btn btn-ghost" id="selfie-retake">撮り直す</button>
+      </div>
+    </div>
+    <video id="selfie-video" playsinline muted hidden></video>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="selfie-close">閉じる</button>
+    </div>
+  </dialog>
+
+  <!-- 参加する人の好み。案内人のクエストは、これに合わせて作る -->
+  <dialog class="modal walk-dialog" id="prefs-dialog" aria-labelledby="prefs-title">
+    <form method="dialog" id="prefs-form">
+      <h2 class="modal-title" id="prefs-title">どんな散歩が好きですか？</h2>
+      <p>案内人のクエストを、あなたの好みに合わせて作ります。あとから図鑑の「ポイント」で変えられます。</p>
+      <fieldset class="fieldset walk-prefs">
+        <legend class="field-label">好きなこと（いくつでも）</legend>
+        <div id="prefs-likes"></div>
+      </fieldset>
+      <fieldset class="fieldset walk-prefs">
+        <legend class="field-label">1回に歩きたい量</legend>
+        <div id="prefs-paces"></div>
+      </fieldset>
+      <div class="modal-actions">
+        <button value="ok" class="btn btn-primary">これで始める</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- えびすガチャ（デモ決済） -->
   <dialog class="modal walk-dialog" id="gacha-dialog" aria-labelledby="gacha-title">
     <h2 class="modal-title" id="gacha-title">えびすガチャ</h2>
@@ -81,19 +134,29 @@
     <p>図鑑がなかなかそろわない人に。払った金額と同じだけ、お店で使えるポイントが付いて、ガチャを1回引けます。買ったポイントは累積（段位・ランキング）には入りません。</p>
     <p class="walk-quiz-q" id="gacha-price"></p>
     <p class="walk-demo-note" id="gacha-price-note"></p>
-    <button type="button" class="btn btn-primary" id="gacha-pay"></button>
-    <div class="gacha-result" id="gacha-result" role="status" hidden>
-      <canvas id="gacha-canvas" width="192" height="240" aria-hidden="true"></canvas>
-      <p class="walk-dialog-kicker" id="gacha-rarity"></p>
-      <p class="walk-quiz-q" id="gacha-name"></p>
-      <p id="gacha-new"></p>
+    <div class="gacha-stage-wrap">
+      <canvas id="gacha-stage" class="gacha-stage" role="img" aria-label="ガチャの機械"></canvas>
     </div>
+    <button type="button" class="btn btn-primary gacha-tap" id="gacha-tap" hidden>タップしてあける！</button>
+    <div class="gacha-result" id="gacha-result" role="status" hidden>
+      <div class="gacha-result-inner">
+        <canvas id="gacha-canvas" width="192" height="240" aria-hidden="true"></canvas>
+        <img id="gacha-photo" class="gacha-photo" alt="" hidden>
+        <p class="walk-dialog-kicker" id="gacha-rarity"></p>
+        <p class="walk-quiz-q" id="gacha-name"></p>
+        <p id="gacha-new"></p>
+        <a class="walk-demo-note" id="gacha-credit" target="_blank" rel="noopener" hidden></a>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary" id="gacha-pay"></button>
     <p class="walk-dialog-kicker" id="gacha-event" hidden></p>
     <p class="walk-demo-note" id="gacha-odds"></p>
     <p class="walk-demo-note" id="gacha-history"></p>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" id="gacha-close">閉じる</button>
     </div>
+    <!-- 紙吹雪ときらきら（画面いっぱい。押せない） -->
+    <canvas id="gacha-fx" class="gacha-fx" aria-hidden="true"></canvas>
   </dialog>
 
   <!-- 周回のコンプリート -->
@@ -142,6 +205,21 @@
     <div role="tabpanel" id="panel-zukan" aria-labelledby="tab-zukan">
       <p id="zukan-summary"></p>
       <ul class="zukan" id="zukan-list"></ul>
+      <section class="catalog" aria-labelledby="catalog-title">
+        <h3 class="card-title" id="catalog-title">佐賀のえびす像</h3>
+        <p class="walk-demo-note" id="catalog-summary"></p>
+        <div class="walk-segment" role="group" aria-label="絞り込み">
+          <button type="button" class="btn btn-secondary btn-sm" data-cat-filter="all">すべて</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-cat-filter="mine">持っている</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-cat-filter="SSR">SSR</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-cat-filter="SR">SR</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-cat-filter="R">R</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-cat-filter="N">N</button>
+        </div>
+        <ul class="catalog-grid" id="catalog-list"></ul>
+        <button type="button" class="btn btn-ghost btn-sm" id="catalog-more"></button>
+        <p class="walk-demo-note" id="catalog-credit"></p>
+      </section>
     </div>
 
     <div role="tabpanel" id="panel-ranking" aria-labelledby="tab-ranking" hidden>
@@ -163,6 +241,7 @@
       <h3 class="card-title">デモ用の操作</h3>
       <p class="walk-demo-note">案内人の QR カードがなくても試せるように、読んだことにできます。</p>
       <div class="walk-demo-actions" id="demo-guides"></div>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-prefs">好みを変える</button>
       <button type="button" class="btn btn-ghost btn-sm" id="btn-reset">記録を消す</button>
     </div>
 

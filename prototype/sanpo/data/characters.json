@@ -1,95 +1,150 @@
 {
-  "_note": "えびすさんが歩く（試作）に出てくるキャラクター。七賢人の紹介文はチームで用意した下調べ（2026-11-15）から。image に透過 PNG（背景を切り抜いた写真）のパスを書くと、その写真を板ポリゴンとして歩かせる。null なら絵で描く。写真は権利を確かめたものだけを img/ に置く（自分たちで撮った写真、著作権の切れた肖像など）。style は絵の描き分け（wa = 着物と髷、yo = 洋装）。flip は進む向きに合わせて写真を左右反転するか",
+  "_note": "えびすさんが歩く（試作）に出てくるキャラクター。七賢人の紹介文はチームで用意した下調べ（2026-11-15）から。写真は背景を切り抜いた透過 PNG を img/ に置き、image（正面）と images（left＝左向き、right＝右向き、side＝横向き1枚。side を使うときは sideFaces にその写真が向いている側）に書くと、その写真を板ポリゴンとして歩かせる。前後（近づく・遠ざかる）に動くときは正面、画面の左へ動くときは左向き、右へ動くときは右向きの板に、くるっと回って替わる。横向きの写真がなければ、正面の写真を斜めにした板で代わりにする（faces に正面写真の顔の向き left / right / front）。写真がなければ絵で描く。写真は権利を確かめたものだけを置く（自分たちで撮った写真、著作権の切れた肖像など）。style は絵の描き分け（wa = 着物と髷、yo = 洋装）。向きの確かめ用に walk?views=test を開くと、七賢人が「正面」「←左」「右→」と書いた板で歩く。heightM は背の高さ（m）。絵や写真は、上端（髷・帽子の先）から足元までがこの高さになるよう縮めて描く。根拠は heightNote。grade はデモ用に勝手に付けたレア度（N・R・SR・SSR。中身は rarity.js）。鍋島直正は6人を育てた中心なのでSSR、大隈重信・江藤新平はSR、佐野常民・副島種臣はR、島義勇・大木喬任はN",
   "ebisu": {
     "name": "えびすさん",
     "image": null,
-    "flip": false
+    "images": {
+      "left": null,
+      "right": null,
+      "side": null
+    },
+    "faces": "front",
+    "heightM": 0.6,
+    "heightNote": "佐賀の恵比須像は台座を除いて数十cm〜1m前後の石像が多いので、その中ほど。像ごとの実測が取れたら直す",
+    "grades": {
+      "yasaka": "SSR",
+      "mojitai": "SR",
+      "houtomi": "N"
+    },
+    "gradesNote": "デモ用に勝手に付けたレア度。八坂成就恵比須は柳町・材木でいちばん古い（1755年）のでSSR、文字鯛恵比須は人の形でない珍しい像なのでSR、寶富恵比須は新しい（2015年）のでN"
   },
   "sages": [
     {
       "id": "naomasa",
       "name": "鍋島直正（閑叟）",
       "years": "1815–1871",
-      "rarity": "すごくレア",
-      "weight": 1,
       "style": "wa",
       "color": "#6d28d9",
       "bio": "第10代佐賀藩主で、ほかの6人を育てた中心人物。藩校の弘道館を拡充し、日本初の実用反射炉を築いて鉄製の大砲を造った。種痘も広めた。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.57,
+      "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
+      "grade": "SSR"
     },
     {
       "id": "sano",
       "name": "佐野常民",
       "years": "1823–1902",
-      "rarity": "レア",
-      "weight": 2,
       "style": "yo",
       "color": "#1f2937",
       "bio": "日本赤十字社の創設者。西南戦争のときに前身の博愛社を作った。精煉方で蒸気船「凌風丸」の建造に関わり、ウィーン万博では日本代表団を率いた。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.57,
+      "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
+      "grade": "R"
     },
     {
       "id": "shima",
       "name": "島義勇",
       "years": "1822–1874",
-      "rarity": "レア",
-      "weight": 2,
       "style": "wa",
       "color": "#0f766e",
       "bio": "開拓判官として札幌の街の骨組みを設計し、「北海道開拓の父」と呼ばれる。佐賀の乱で江藤新平と一緒に立ち、処刑された。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.57,
+      "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
+      "grade": "N"
     },
     {
       "id": "soejima",
       "name": "副島種臣",
       "years": "1828–1905",
-      "rarity": "レア",
-      "weight": 2,
       "style": "yo",
       "color": "#374151",
       "beard": true,
       "bio": "外務卿を務めた外交官。マリア・ルス号事件では、清国人労働者を解放させる判断を主導した。書家としても高く評価されている。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.57,
+      "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
+      "grade": "R"
     },
     {
       "id": "oki",
       "name": "大木喬任",
       "years": "1832–1899",
-      "rarity": "レア",
-      "weight": 2,
       "style": "yo",
       "color": "#334155",
       "bio": "初代文部卿として、近代的な学校制度を定めた「学制」を公布した。江藤新平と一緒に東京への遷都を建言し、のちに司法卿も務めた。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.57,
+      "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
+      "grade": "N"
     },
     {
       "id": "eto",
       "name": "江藤新平",
       "years": "1834–1874",
-      "rarity": "レア",
-      "weight": 2,
       "style": "wa",
       "color": "#1e40af",
       "bio": "初代司法卿として、司法権の独立と近代的な法制度の整備に取り組んだ。明治六年の政変で政府を去ったあと、佐賀の乱を率いて敗れ、処刑された。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.57,
+      "heightNote": "背の高さの記録が見つからないため、幕末の成人男性の平均（約157cm）",
+      "grade": "SR"
     },
     {
       "id": "okuma",
       "name": "大隈重信",
       "years": "1838–1922",
-      "rarity": "レア",
-      "weight": 2,
       "style": "yo",
       "color": "#111827",
       "bio": "内閣総理大臣を2度務め、東京専門学校（いまの早稲田大学）を創設した。財政や外交でも大きな役割を果たした。",
       "image": null,
-      "flip": false
+      "images": {
+        "left": null,
+        "right": null,
+        "side": null
+      },
+      "faces": "front",
+      "heightM": 1.8,
+      "heightNote": "当時としては長身で、約180cmと伝わる",
+      "grade": "SR"
     }
   ]
 }

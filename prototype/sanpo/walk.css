@@ -196,7 +196,7 @@ body { background: var(--color-surface); overflow: hidden; }
 }
 .zukan canvas { width: 64px; height: 80px; }
 .zukan .is-missing { color: var(--color-on-surface-muted); }
-.zukan .zukan-rarity { color: var(--color-warning); font-weight: 700; }
+.zukan .grade-badge { justify-self: center; }
 
 .walk-segment { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-3); }
 .walk-segment .btn {
@@ -261,24 +261,135 @@ body { background: var(--color-surface); overflow: hidden; }
 }
 
 /* ---------- ガチャ ---------- */
-#gacha-pay { width: 100%; margin: var(--space-2) 0 var(--space-3); }
+:root {
+  --gacha-body: #dc2626;
+  --gacha-body-dark: #991b1b;
+  --gacha-gold: #fbbf24;
+  --gacha-cap-red: #ef4444;
+  --gacha-cap-blue: #3b82f6;
+  --gacha-cap-green: #22c55e;
+  --gacha-cap-pink: #ec4899;
+  --gacha-rainbow: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+}
+#gacha-pay { width: 100%; margin: var(--space-2) 0 var(--space-3); font-size: var(--font-size-md); font-weight: 700; }
+.gacha-stage-wrap { position: relative; display: grid; justify-items: center; }
+.gacha-stage { width: 320px; max-width: 100%; aspect-ratio: 320 / 280; cursor: pointer; }
+.gacha-tap {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  animation: gacha-bounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes gacha-bounce { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+.gacha-fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; }
+
 .gacha-result {
+  position: relative;
   display: grid;
   justify-items: center;
   text-align: center;
-  padding: var(--space-3);
-  border: 1px solid var(--walk-rare);
+  margin-top: var(--space-2);
+  padding: 4px;
+  border: 0;
+  background: var(--walk-rare);
   border-radius: var(--radius-md);
+  overflow: hidden;
+  isolation: isolate;
+}
+.gacha-result-inner {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: calc(var(--radius-md) - 3px);
+  background: var(--color-surface);
 }
 .gacha-result p { margin: var(--space-1) 0 0; }
-.gacha-result canvas { width: 96px; height: 120px; }
-.gacha-result.is-shown canvas { animation: gacha-pop var(--duration-base, 200ms) var(--easing, ease-out) both; animation-duration: 600ms; }
+.gacha-result canvas { width: 128px; height: 160px; }
+.gacha-result.is-shown canvas { animation: gacha-pop 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.gacha-result.is-shown #gacha-rarity { animation: gacha-stamp 500ms 300ms cubic-bezier(0.2, 1.8, 0.4, 1) both; }
 @keyframes gacha-pop {
-  from { transform: scale(0.3) rotateY(180deg); opacity: 0; }
+  from { transform: scale(0.2) rotateY(540deg); opacity: 0; }
   to { transform: scale(1) rotateY(0); opacity: 1; }
 }
+@keyframes gacha-stamp {
+  from { transform: scale(3) rotate(-12deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+/* カードを横切る光 */
+.gacha-result::after {
+  content: '';
+  position: absolute;
+  inset: -50% auto -50% -60%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: rotate(20deg);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+.gacha-result.is-shown::after { animation: gacha-shine 1.6s 0.5s ease-in-out 2 both; }
+@keyframes gacha-shine {
+  from { left: -60%; opacity: 1; }
+  to { left: 130%; opacity: 1; }
+}
+#gacha-rarity { font-size: var(--font-size-lg); font-weight: 900; letter-spacing: 0.04em; }
+/* SR：金色に光る */
+.gacha-result[data-grade="R"] { background: linear-gradient(135deg, #ffffff, #94a3b8, #e2e8f0); }
+.gacha-result[data-grade="SR"] {
+  background: linear-gradient(135deg, #fff7cc, var(--gacha-gold), #b45309);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.6);
+}
+.gacha-result[data-grade="SR"] .gacha-result-inner { background: radial-gradient(circle at 50% 30%, rgba(251, 191, 36, 0.25), var(--color-surface) 70%); }
+.gacha-result[data-grade="SR"] #gacha-rarity { color: var(--gacha-gold); text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+/* SSR：虹色にぐるぐる光る */
+.gacha-result[data-grade="SSR"] { background: transparent; box-shadow: 0 0 32px rgba(139, 92, 246, 0.7); }
+.gacha-result[data-grade="SSR"] .gacha-result-inner { background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.35), var(--color-surface) 70%); }
+.gacha-result[data-grade="SSR"]::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  z-index: -1;
+  background: conic-gradient(#ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+  animation: gacha-spin 3s linear infinite;
+}
+.gacha-result[data-grade="SSR"] canvas { filter: drop-shadow(0 0 10px #ffffff); }
+.gacha-result[data-grade="SSR"] #gacha-rarity {
+  background: var(--gacha-rainbow);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gacha-stamp 500ms 300ms cubic-bezier(0.2, 1.8, 0.4, 1) both, gacha-slide 2s linear infinite;
+}
+@keyframes gacha-spin { to { transform: rotate(1turn); } }
+@keyframes gacha-slide { to { background-position: 200% 0; } }
+
+/* レア度のバッジ（図鑑・人物カード） */
+.grade-badge {
+  display: inline-block;
+  min-width: 2.6em;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: 900;
+  font-size: var(--font-size-sm);
+  text-align: center;
+  color: #111827;
+  background: #d1d5db;
+}
+.grade-badge[data-grade="R"] { background: #93c5fd; }
+.grade-badge[data-grade="SR"] { background: var(--gacha-gold); box-shadow: 0 0 8px rgba(251, 191, 36, 0.7); }
+.grade-badge[data-grade="SSR"] { background: var(--gacha-rainbow); color: #ffffff; text-shadow: 0 0 2px #000; box-shadow: 0 0 8px rgba(139, 92, 246, 0.7); }
+.walk-card-rarity[data-grade="SSR"] { background: var(--gacha-rainbow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
 @media (prefers-reduced-motion: reduce) {
-  .gacha-result.is-shown canvas { animation: none; }
+  .gacha-result.is-shown canvas,
+  .gacha-result.is-shown #gacha-rarity,
+  .gacha-result.is-shown::after,
+  .gacha-result[data-grade="SSR"]::before,
+  .gacha-tap { animation: none; }
 }
 
 /* イベントのブースト中 */
@@ -291,3 +402,51 @@ body { background: var(--color-surface); overflow: hidden; }
   font-size: var(--font-size-sm);
   font-weight: 700;
 }
+
+/* 好みを聞く画面 */
+.walk-prefs { margin-bottom: var(--space-4); }
+.walk-prefs .check { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+
+/* ---------- 記念撮影 ---------- */
+.selfie-frame { position: relative; }
+.selfie-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 56dvh;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted, #111827);
+  touch-action: none;
+  cursor: grab;
+}
+.selfie-flash { position: absolute; inset: 0; border-radius: var(--radius-md); background: #ffffff; opacity: 0; pointer-events: none; }
+.selfie-flash.is-on { animation: selfie-flash 400ms ease-out; }
+@keyframes selfie-flash { from { opacity: 0.95; } to { opacity: 0; } }
+.selfie-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; }
+.selfie-tools .walk-demo-note { flex: 1 1 100%; margin: 0; }
+.selfie-shoot { width: 100%; margin-top: var(--space-2); font-size: var(--font-size-md); font-weight: 700; }
+.selfie-photo { display: block; width: 100%; border-radius: var(--radius-md); }
+@media (prefers-reduced-motion: reduce) { .selfie-flash.is-on { animation: none; } }
+
+/* ---------- 佐賀のえびす像（一覧） ---------- */
+.catalog { margin-top: var(--space-4); }
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+.catalog-grid li { display: grid; justify-items: center; gap: var(--space-1); text-align: center; font-size: var(--font-size-xs); }
+.catalog-grid img, .catalog-noimg {
+  width: 96px; height: 96px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted, #1f2937);
+}
+.catalog-noimg { display: grid; place-items: center; color: var(--color-on-surface-muted); }
+/* まだ集めていない像は、ぼかして暗くする（どんな像かは、なんとなく分かる） */
+.catalog-grid img.is-silhouette { filter: blur(5px) grayscale(1) brightness(0.45); }
+.catalog-grid a { color: var(--color-primary); }
+.gacha-photo { width: 160px; height: 160px; object-fit: cover; border-radius: var(--radius-md); }
