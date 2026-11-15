@@ -1,4 +1,4 @@
-// えびすさんが歩く（試作）
+// えびすさんが歩く（さがもん！Go！ の AR 画面、試作）
 // OpenStreetMap の徒歩ルートに沿って、えびす像と、ときどき現れるレアキャラ（佐賀七賢人）を歩かせる。
 // 自分の位置（GPS か、地図で選んだ場所）とスマホの向きから、キャラクターがどこに見えるかを計算し、カメラの映像に重ねて描く。
 // 地面は認識していない。目の高さを EYE_HEIGHT_M と決めて、足元の位置を出している。
@@ -1253,6 +1253,7 @@ async function main() {
   // 佐賀のえびす像の一覧（場所が分からないので、ガチャと図鑑だけで集める。写真は公式サイトから直接読む）
   const catalogEntries = catalog.items.map((it) => ({
     key: `cat:${it.fid}`, name: it.name, grade: it.grade, photo: it.img, url: it.url, board: ebisuBoard, catalog: true,
+    address: it.address,
   }));
   initBook({
     entries: bookEntries,

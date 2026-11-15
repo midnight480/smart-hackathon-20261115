@@ -156,7 +156,7 @@ function frame(g, W, H) {
   g.fillStyle = '#fbbf24';
   g.font = `900 ${17 * u}px ${css('--font-family')}`;
   g.textBaseline = 'middle';
-  g.fillText('えびすさんが歩く', 12 * u, H - band + 18 * u);
+  g.fillText('さがもん！Go！', 12 * u, H - band + 18 * u);
   const d = new Date();
   g.fillStyle = '#ffffff';
   g.font = `${11 * u}px ${css('--font-family')}`;
@@ -259,7 +259,7 @@ async function share() {
   try {
     await navigator.share({
       files: [new File([shot.blob], shot.fileName, { type: 'image/jpeg' })],
-      title: 'えびすさんが歩く',
+      title: 'さがもん！Go！',
       text: '佐賀の七賢人と記念撮影しました',
     });
   } catch { /* やめたときは何もしない */ }

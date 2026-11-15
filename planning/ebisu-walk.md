@@ -1,6 +1,6 @@
-# えびすさんが歩く — 機能のまとめ
+# さがもん！Go！ — 機能のまとめ
 
-2026-11-15 時点の試作（`prototype/sanpo/walk`）でできていることをまとめる。作り方やファイルの役割は [prototype/sanpo/README.md](../prototype/sanpo/README.md) にある。
+製品名は「さがもん！Go！」。AR で歩く画面は「えびすさんが歩く」と呼ぶ。2026-11-15 時点の試作（`prototype/sanpo/walk`）でできていることをまとめる。作り方やファイルの役割は [prototype/sanpo/README.md](../prototype/sanpo/README.md) にある。
 
 - 公開先（試作）：https://ebisu-sanpo.midnight480.workers.dev/prototype/sanpo/walk
 - ブランチ：`feature/ebisu-walk`（PR #1）

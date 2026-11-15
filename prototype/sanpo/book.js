@@ -206,7 +206,8 @@ function setupCatalog() {
 function renderCatalog() {
   const all = ctx.catalog.entries;
   const got = all.filter((e) => progress.has(e.key)).length;
-  $('catalog-summary').textContent = `${all.length}体のうち ${got}体を集めました（ガチャで出ます）`;
+  const met = all.filter((e) => progress.visited(e.key)).length;
+  $('catalog-summary').textContent = `${all.length}体のうち ${got}体を集めました（現地で会えたのは ${met}体）。その場所まで行くと集まり、ガチャでも出ます`;
   document.querySelectorAll('[data-cat-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.catFilter === cat.filter)));
   const list = all.filter((e) => {
     if (cat.filter === 'mine') return progress.has(e.key);
@@ -231,6 +232,13 @@ function renderCatalog() {
     name.textContent = has ? e.name : '？？？';
     if (has) { name.href = e.url; name.target = '_blank'; name.rel = 'noopener'; } else name.className = 'is-missing';
     li.append(img, badge, name);
+    // 場所のヒント：集めていない像は町名まで、集めた像は住所。現地で会えた像には印
+    if (e.address) {
+      const where = Object.assign(document.createElement('span'), { className: 'is-missing' });
+      where.textContent = has ? e.address : e.address.replace(/^佐賀市/, '').replace(/[0-9０-９].*$/, '');
+      li.append(where);
+    }
+    if (progress.visited(e.key)) li.append(Object.assign(document.createElement('span'), { className: 'catalog-visited', textContent: '現地で会えた' }));
     ul.append(li);
   }
   $('catalog-more').hidden = list.length <= cat.shown;
